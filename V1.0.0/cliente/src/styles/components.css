@@ -425,9 +425,12 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(2, 5, 12, 0.72);
-  backdrop-filter: blur(10px);
+  background: rgba(2, 5, 12, 0.84);
+  backdrop-filter: blur(14px);
   animation: fadeIn 0.2s ease both;
+}
+[data-mode='light'] .modal-overlay {
+  background: rgba(225, 232, 248, 0.72);
 }
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -440,7 +443,24 @@
   flex-direction: column;
   border-radius: var(--radius-lg);
   overflow: hidden;
+  background-color: color-mix(in srgb, var(--bg-2) 92%, #000);
   animation: fadeUp 0.28s ease both;
+}
+[data-mode='light'] .modal {
+  background-color: rgba(251, 253, 255, 0.96);
+}
+[data-mode='contrast'] .modal {
+  background-color: #000;
+}
+.control-panel .card {
+  background-color: color-mix(in srgb, var(--bg-2) 74%, #000);
+  background-image: none;
+}
+[data-mode='light'] .control-panel .card {
+  background-color: rgba(255, 255, 255, 0.92);
+}
+[data-mode='contrast'] .control-panel .card {
+  background-color: #000;
 }
 .modal--sm { width: min(100%, 440px); }
 .modal--md { width: min(100%, 620px); }

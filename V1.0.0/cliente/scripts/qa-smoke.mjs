@@ -16,6 +16,7 @@ const modes = ['light', 'dark', 'contrast'];
 const consoleErrors = [];
 const pageErrors = [];
 const checks = [];
+let accessToken = null;
 
 function check(name, condition, detail = '') {
   checks.push({ name, ok: Boolean(condition), detail });
@@ -27,6 +28,14 @@ async function shot(page, name) {
   await page.screenshot({ path: resolve(screenshots, `${name}.png`), fullPage: false });
 }
 
+async function dismissToasts(page) {
+  const closeButtons = page.locator('.toast button');
+  while (await closeButtons.count()) {
+    await closeButtons.first().click().catch(() => undefined);
+    await page.waitForTimeout(60);
+  }
+}
+
 async function main() {
   await mkdir(screenshots, { recursive: true });
   await mkdir(reports, { recursive: true });
@@ -36,6 +45,16 @@ async function main() {
   const page = await context.newPage();
   page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
   page.on('pageerror', (error) => pageErrors.push(String(error)));
+  page.on('response', async (response) => {
+    if (response.url().endsWith('/api/v1/auth/login') && response.ok()) {
+      try {
+        const payload = await response.json();
+        accessToken = payload?.data?.access_token ?? null;
+      } catch {
+        accessToken = accessToken ?? null;
+      }
+    }
+  });
 
   await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('h1');
@@ -52,6 +71,8 @@ async function main() {
   await page.getByRole('button', { name: 'Entrar a SKATENEA' }).click();
   await page.waitForURL('**/app', { timeout: 15000 });
   await page.waitForSelector('h1', { timeout: 15000 });
+  await page.waitForTimeout(500);
+  await dismissToasts(page);
   check('Login y dashboard', page.url().endsWith('/app'), page.url());
   await shot(page, '03-dashboard-admin');
 
@@ -61,6 +82,7 @@ async function main() {
   check('Dropdown con panel de control', await page.getByRole('menuitem', { name: /Panel de control/i }).count() === 1);
   await page.getByRole('menuitem', { name: /Panel de control/i }).click();
   await page.waitForSelector('[role="dialog"]');
+  await page.waitForTimeout(500);
   check('Panel de control abre', await page.locator('[role="dialog"]').count() === 1);
   await shot(page, '04-control-panel');
 
@@ -103,9 +125,16 @@ async function main() {
   check('Página de auditoría carga', await page.locator('h1').count() > 0);
   await shot(page, '10-audit');
 
-  // Captura de los 12 temas en los 3 modos.
+  // Captura de los 12 temas en los 3 modos. Se persiste en el servidor
+  // para que el tema visible coincida con la preferencia del usuario.
   for (const theme of themes) {
     for (const mode of modes) {
+      if (accessToken) {
+        await context.request.patch(`${base}/api/v1/preferences`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          data: { theme, mode, geometry: 'soft', background: 'aurora' },
+        }).catch(() => undefined);
+      }
       await page.evaluate(({ theme: t, mode: m }) => {
         window.localStorage.setItem('skatenea:appearance', JSON.stringify({
           theme: t,
@@ -117,10 +146,18 @@ async function main() {
       }, { theme, mode });
       await page.goto(`${base}/app`, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('h1');
-      await page.waitForTimeout(180);
+      await page.waitForTimeout(520);
       check(`Tema ${theme} / ${mode}`, await page.locator('h1').count() > 0);
       await shot(page, `theme-${theme}-${mode}`);
     }
+  }
+
+  // Restaura la preferencia por defecto.
+  if (accessToken) {
+    await context.request.patch(`${base}/api/v1/preferences`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      data: { theme: 'aurora', mode: 'dark', geometry: 'soft', background: 'aurora' },
+    }).catch(() => undefined);
   }
 
   const report = {

@@ -10,8 +10,8 @@ import { useTheme } from '../../theme/ThemeProvider';
 export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [controlPanelOpen, setControlPanelOpen] = useState(false);
-  const { preferences } = useAuth();
-  const { applyPreferences } = useTheme();
+  const { preferences, savePreferences, isAuthenticated } = useAuth();
+  const { theme, mode, geometry, background, applyPreferences } = useTheme();
   const location = useLocation();
 
   useEffect(() => {
@@ -21,6 +21,21 @@ export function AppShell() {
   useEffect(() => {
     if (preferences) applyPreferences(preferences);
   }, [preferences, applyPreferences]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !preferences) return;
+    const changed = theme !== preferences.theme
+      || mode !== preferences.mode
+      || geometry !== preferences.geometry
+      || background !== preferences.background;
+    if (!changed) return;
+
+    const timer = window.setTimeout(() => {
+      void savePreferences({ theme, mode, geometry, background }).catch(() => undefined);
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+  }, [theme, mode, geometry, background, preferences, isAuthenticated, savePreferences]);
 
   return (
     <div className="app-shell">
