@@ -137,7 +137,8 @@ Ver [`PERFORMANCE_REPORT.md`](PERFORMANCE_REPORT.md).
 - [ ] Pruebas en Firefox/Safari/Edge.
 - [ ] Certificación WCAG 2.2 AA por auditor externo.
 - [ ] Prueba de restauración de backups.
-- [ ] Publicación de release y `git push`.
+- [x] `git push` y tag `v1.0.0` publicados.
+- [ ] Release page con artefactos.
 
 ## 10. Conclusión
 

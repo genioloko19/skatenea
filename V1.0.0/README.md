@@ -166,7 +166,7 @@ Ver `../INFORMES/V0.0.1/` para la auditoría que originó este refactor.
 | 6 — Portales por rol | ✅ base funcional |
 | 7 — Integraciones | ✅ correo, PDF/QR, impresión en cola, webhooks, exportaciones |
 | 8 — Endurecimiento y cumplimiento | 🟡 técnico implementado; faltan pentest, MFA, revisión legal y Coljuegos |
-| 9 — QA complejo y release | ✅ QA smoke/E2E/axe/perf; 🟡 release y push pendientes |
+| 9 — QA complejo y release | ✅ QA smoke/E2E/axe/perf, push y tag `v1.0.0`; 🟡 release page/artefactos |
 
 ## 8. Licencia
 

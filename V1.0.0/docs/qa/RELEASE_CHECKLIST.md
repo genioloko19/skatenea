@@ -45,11 +45,13 @@
 - [ ] Alertas y monitoreo.
 - [ ] Revisión legal.
 - [ ] Autorización Coljuegos.
-- [ ] `git push` y release en GitHub.
+- [x] `git push` a `origin/master`.
+- [x] Tag `v1.0.0` publicado.
+- [ ] Release page con notas y artefactos.
 
 ## Release
 
-- [ ] Tag `v1.0.0`.
-- [ ] Notas de release.
+- [x] Tag `v1.0.0`.
+- [x] Notas de release (`CHANGELOG.md`).
 - [ ] Artefactos (zip servidor/cliente/bd/docs).
-- [ ] Publicación en GitHub.
+- [ ] Release page en GitHub.
