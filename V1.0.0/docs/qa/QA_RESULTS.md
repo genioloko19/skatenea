@@ -11,6 +11,7 @@
 | Área | Resultado |
 |---|---|
 | Pruebas unitarias PHP | **20/20 OK**, 59 aserciones |
+| Pruebas unitarias frontend | **8/8 OK** |
 | PHPStan nivel 6 | **0 errores** |
 | PHPCS PSR-12 | **0 errores** |
 | Smoke E2E (Playwright) | **47/47 checks OK** |
@@ -19,7 +20,7 @@
 | Capturas generadas | **46** (10 pantallas + 36 temas/modos) |
 | OpenAPI | 42 rutas parseadas correctamente |
 | `composer audit` | Sin avisos |
-| `npm audit` | Pendiente de ejecución formal |
+| `npm audit --omit=dev` | 0 vulnerabilidades |
 
 ## 2. Comandos ejecutados
 
