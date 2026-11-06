@@ -1,5 +1,7 @@
 # SKATENEA V1.0.0
 
+> README principal del repositorio: [`../README.md`](../README.md)
+
 Sistema de Gestión de Rifas (SGR) multi-rifa con arquitectura cliente/servidor separada.
 
 - **Servidor:** PHP 8.2 + PDO + POO + SOLID · API REST `/api/v1` · JWT + refresh rotativo + API keys
