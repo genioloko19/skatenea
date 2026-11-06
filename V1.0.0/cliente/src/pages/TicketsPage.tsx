@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { CircleDollarSign, Clock3, Filter, Ticket as TicketIcon, Wallet } from 'lucide-react';
+import { CircleDollarSign, Clock3, Download, Filter, Printer, Ticket as TicketIcon, Wallet } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import type { Raffle, Ticket, TicketStatus } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
@@ -157,6 +157,35 @@ export function TicketsPage() {
     }
   };
 
+  const downloadReceipt = async (ticket: Ticket) => {
+    setBusy(`pdf-${ticket.id}`);
+    try {
+      const blob = await api.download(`/tickets/${ticket.id}/receipt.pdf`);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `boleta-${ticket.number}.pdf`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast('error', 'No se pudo generar el PDF', error instanceof ApiError ? error.message : undefined);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const enqueuePrint = async (ticket: Ticket) => {
+    setBusy(`print-${ticket.id}`);
+    try {
+      await api.printTicket(ticket.id);
+      toast('success', 'Impresión encolada', 'El worker de impresión procesará la boleta.');
+    } catch (error) {
+      toast('error', 'No se pudo encolar la impresión', error instanceof ApiError ? error.message : undefined);
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="page-stack">
       <PageHeader
@@ -240,6 +269,12 @@ export function TicketsPage() {
                         <div className="row-actions">
                           {isSeller && ticket.status === 'available' && <Button size="sm" onClick={() => setReserveTarget(ticket)}>Separar</Button>}
                           {isSeller && ticket.status === 'reserved' && <Button size="sm" variant="success" onClick={() => setPayTarget(ticket)}>Pagar</Button>}
+                          {['paid', 'winner'].includes(ticket.status) && (
+                            <Button size="sm" variant="secondary" icon={<Download size={15} />} loading={busy === `pdf-${ticket.id}`} onClick={() => downloadReceipt(ticket)}>PDF</Button>
+                          )}
+                          {(isSeller || user?.role === 'super_admin') && ['paid', 'winner'].includes(ticket.status) && (
+                            <Button size="sm" variant="ghost" icon={<Printer size={15} />} loading={busy === `print-${ticket.id}`} onClick={() => enqueuePrint(ticket)}>Imprimir</Button>
+                          )}
                           {(isSeller || isManager) && ['available', 'reserved', 'paid'].includes(ticket.status) && (
                             <Button size="sm" variant="ghost" loading={busy === `cancel-${ticket.id}`} onClick={() => cancel(ticket)}>Anular</Button>
                           )}

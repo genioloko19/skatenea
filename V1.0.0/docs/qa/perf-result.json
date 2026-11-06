@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2026-11-06T11:04:21.332Z",
+  "tool": "ApacheBench (ab)",
+  "requests": 100,
+  "concurrency": 10,
+  "results": [
+    {
+      "name": "health",
+      "url": "http://127.0.0.1:8000/api/v1/health",
+      "requestsPerSecond": 15.98,
+      "timePerRequestMs": 625.881,
+      "failedRequests": 0,
+      "non2xx": 0,
+      "transferRateKbps": 9.33
+    },
+    {
+      "name": "public_raffles",
+      "url": "http://127.0.0.1:8000/api/v1/public/raffles",
+      "requestsPerSecond": 15.29,
+      "timePerRequestMs": 653.904,
+      "failedRequests": 0,
+      "non2xx": 0,
+      "transferRateKbps": 47.89
+    }
+  ]
+}

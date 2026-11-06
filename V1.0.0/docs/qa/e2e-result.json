@@ -1,0 +1,127 @@
+{
+  "generatedAt": "2026-11-06T11:02:40.015Z",
+  "raffleId": "9884067d-6b1d-4fad-b6fe-cc87171a93f7",
+  "code": "QA-934320",
+  "checks": [
+    {
+      "name": "API login de los cuatro roles",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Listado de vendedores para líder",
+      "ok": true,
+      "detail": "Vendedor Demo"
+    },
+    {
+      "name": "Líder crea rifa",
+      "ok": true,
+      "detail": "QA-934320"
+    },
+    {
+      "name": "Líder envía a aprobación",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Admin ve la rifa pendiente en la UI",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Admin aprueba la rifa",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Líder activa y genera boletas",
+      "ok": true,
+      "detail": "20"
+    },
+    {
+      "name": "Líder asigna vendedor",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Líder asigna rango de 10 boletas",
+      "ok": true,
+      "detail": "10"
+    },
+    {
+      "name": "Vendedor recibe 403 en usuarios",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "API rechaza reserva de boleta no asignada",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Vendedor ve su boleta en la UI",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Vendedor separa y paga la boleta",
+      "ok": true,
+      "detail": "paid"
+    },
+    {
+      "name": "Worker de impresión procesa la boleta",
+      "ok": true,
+      "detail": "done"
+    },
+    {
+      "name": "PDF de recibo generado",
+      "ok": true,
+      "detail": "48489"
+    },
+    {
+      "name": "Exportación CSV de rifa",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Líder recibe notificación de aprobación",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Comprador ve su boleta pagada",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Comprador tiene token QR",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Página pública verifica la boleta",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Correo de recuperación encolado y enviado",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Contraseña temporal funciona",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Contraseña restaurada",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "errors": [],
+  "summary": {
+    "total": 23,
+    "ok": 23
+  }
+}

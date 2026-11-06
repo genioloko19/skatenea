@@ -42,7 +42,7 @@ export function PublicLandingPage() {
     <div className="public-page">
       <Background />
       <header className="public-header">
-        <Link to="/" className="brand" aria-label="SKATENEA inicio">
+        <Link to="/" className="brand">
           <span className="brand__mark" aria-hidden="true"><Sparkles size={24} /></span>
           <span className="brand__text">
             <strong>SKATENEA</strong>

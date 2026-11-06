@@ -9,6 +9,10 @@ V1.0.0/servidor/storage/logs/*
 !V1.0.0/servidor/storage/logs/.gitkeep
 V1.0.0/servidor/storage/rate/*
 !V1.0.0/servidor/storage/rate/.gitkeep
+V1.0.0/servidor/storage/prints/*
+!V1.0.0/servidor/storage/prints/.gitkeep
+V1.0.0/servidor/storage/mpdf/*
+!V1.0.0/servidor/storage/mpdf/.gitkeep
 V1.0.0/servidor/storage/coverage/
 V1.0.0/servidor/.phpunit.cache/
 V1.0.0/servidor/.phpunit.result.cache

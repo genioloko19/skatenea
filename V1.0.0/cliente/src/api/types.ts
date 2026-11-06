@@ -162,6 +162,49 @@ export interface ApiKeyCreated {
   key: string;
 }
 
+export interface NotificationEntry {
+  id: string;
+  user_id: string;
+  title: string;
+  body: string;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface Webhook {
+  id: string;
+  name: string;
+  url: string;
+  events: string[];
+  active: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  secret?: string;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  webhook_id: string;
+  event: string;
+  payload: string;
+  status: string;
+  attempts: number;
+  response_code: number | null;
+  last_error: string | null;
+  next_attempt_at: string;
+  created_at: string;
+  delivered_at: string | null;
+}
+
+export interface VerifyResult {
+  valid: boolean;
+  raffle?: string;
+  number?: number;
+  status?: TicketStatus;
+  winner?: boolean;
+}
+
 export interface AuditEntry {
   id: string;
   actor_id: string | null;

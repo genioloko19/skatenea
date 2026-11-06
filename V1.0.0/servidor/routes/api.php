@@ -13,11 +13,14 @@ use Skatenea\Http\Controllers\AuthController;
 use Skatenea\Http\Controllers\BuyerController;
 use Skatenea\Http\Controllers\DashboardController;
 use Skatenea\Http\Controllers\HealthController;
+use Skatenea\Http\Controllers\NotificationController;
 use Skatenea\Http\Controllers\PreferencesController;
+use Skatenea\Http\Controllers\PrintController;
 use Skatenea\Http\Controllers\RaffleController;
 use Skatenea\Http\Controllers\SettingsController;
 use Skatenea\Http\Controllers\TicketController;
 use Skatenea\Http\Controllers\UserController;
+use Skatenea\Http\Controllers\WebhookController;
 use Skatenea\Http\Middleware\ApiKeyMiddleware;
 use Skatenea\Http\Middleware\AuthMiddleware;
 use Skatenea\Http\Middleware\RateLimitMiddleware;
@@ -40,6 +43,9 @@ return static function (App $app, Container $container): void {
     $audit = $container->get(AuditController::class);
     $settings = $container->get(SettingsController::class);
     $preferences = $container->get(PreferencesController::class);
+    $notifications = $container->get(NotificationController::class);
+    $webhooks = $container->get(WebhookController::class);
+    $print = $container->get(PrintController::class);
 
     $loginLimit = $rate->limit(
         'login',
@@ -48,6 +54,7 @@ return static function (App $app, Container $container): void {
     );
     $registerLimit = $rate->limit('register', 12, 3600);
     $refreshLimit = $rate->limit('refresh', 60, 60);
+    $recoveryLimit = $rate->limit('recovery', 6, 900);
 
     $router->get('/', static fn (Request $request): Response => Response::data([
         'name' => 'SKATENEA API',
@@ -61,6 +68,8 @@ return static function (App $app, Container $container): void {
     $router->post('/api/v1/auth/refresh', [$authController, 'refresh'], [$refreshLimit]);
     $router->post('/api/v1/auth/logout', [$authController, 'logout']);
     $router->post('/api/v1/auth/register', [$authController, 'register'], [$registerLimit]);
+    $router->post('/api/v1/auth/forgot-password', [$authController, 'forgotPassword'], [$recoveryLimit]);
+    $router->post('/api/v1/auth/reset-password', [$authController, 'resetPassword'], [$recoveryLimit]);
     $router->get('/api/v1/auth/me', [$authController, 'me'], [$auth->require()]);
     $router->patch('/api/v1/auth/password', [$authController, 'changePassword'], [$auth->require('profile.update')]);
 
@@ -94,9 +103,24 @@ return static function (App $app, Container $container): void {
 
     $router->get('/api/v1/tickets/mine', [$tickets, 'mine'], [$auth->require('tickets.read')]);
     $router->get('/api/v1/tickets/{id}', [$tickets, 'show'], [$auth->require('tickets.read')]);
+    $router->get('/api/v1/tickets/{id}/receipt.pdf', [$tickets, 'receipt'], [$auth->require('tickets.read')]);
+    $router->post('/api/v1/tickets/{id}/print', [$print, 'enqueue'], [$auth->require('print.enqueue')]);
+    $router->get('/api/v1/print-jobs/{id}', [$print, 'status'], [$auth->require('print.enqueue')]);
     $router->post('/api/v1/tickets/{id}/reserve', [$tickets, 'reserve'], [$auth->require('tickets.reserve')]);
     $router->post('/api/v1/tickets/{id}/pay', [$tickets, 'pay'], [$auth->require('tickets.pay')]);
     $router->post('/api/v1/tickets/{id}/cancel', [$tickets, 'cancel'], [$auth->require('tickets.cancel')]);
+    $router->get('/api/v1/raffles/{id}/export.csv', [$raffles, 'exportTickets'], [$auth->require('tickets.read')]);
+
+    $router->get('/api/v1/notifications', [$notifications, 'index'], [$auth->require()]);
+    $router->patch('/api/v1/notifications/{id}/read', [$notifications, 'markRead'], [$auth->require()]);
+    $router->post('/api/v1/notifications/read-all', [$notifications, 'markAllRead'], [$auth->require()]);
+
+    $router->get('/api/v1/webhooks', [$webhooks, 'index'], [$auth->require('webhooks.read')]);
+    $router->post('/api/v1/webhooks', [$webhooks, 'store'], [$auth->require('webhooks.manage')]);
+    $router->patch('/api/v1/webhooks/{id}', [$webhooks, 'update'], [$auth->require('webhooks.manage')]);
+    $router->delete('/api/v1/webhooks/{id}', [$webhooks, 'delete'], [$auth->require('webhooks.manage')]);
+    $router->post('/api/v1/webhooks/{id}/test', [$webhooks, 'test'], [$auth->require('webhooks.manage')]);
+    $router->get('/api/v1/webhooks/{id}/deliveries', [$webhooks, 'deliveries'], [$auth->require('webhooks.read')]);
 
     $router->get('/api/v1/buyers', [$buyers, 'search'], [$auth->require('buyers.read')]);
     $router->get('/api/v1/buyers/{id}', [$buyers, 'show'], [$auth->require('buyers.read')]);
@@ -118,7 +142,9 @@ return static function (App $app, Container $container): void {
     $router->delete('/api/v1/api-keys/{id}', [$apiKeys, 'revoke'], [$auth->require('api_keys.revoke')]);
 
     $router->get('/api/v1/audit', [$audit, 'index'], [$auth->require('audit.read')]);
+    $router->get('/api/v1/audit/export.csv', [$audit, 'export'], [$auth->require('audit.read')]);
 
     $router->get('/api/v1/settings', [$settings, 'index'], [$auth->require('settings.read')]);
     $router->patch('/api/v1/settings', [$settings, 'update'], [$auth->require('settings.update')]);
+
 };

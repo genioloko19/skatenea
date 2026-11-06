@@ -16,7 +16,12 @@
 
 ### 1.1 Recuperar acceso
 
-Si olvidaste tu contraseña, contacta al super administrador. El flujo de recuperación automática se completará en la fase 7 (correo transaccional).
+1. En el login, pulsa **¿Olvidaste tu contraseña?**.
+2. Ingresa tu correo registrado.
+3. Recibirás un enlace de un solo uso (vence en 30 minutos).
+4. Define una nueva contraseña. Se revocarán las demás sesiones.
+
+Si el correo no llega, revisa spam o contacta al super administrador. Por seguridad, el sistema no revela si la cuenta existe.
 
 ## 2. Roles y alcance
 
@@ -104,6 +109,16 @@ El monto se toma del valor de la boleta; no se puede modificar desde la pantalla
 - Pagada: solo el super administrador.
 - La acción queda en auditoría.
 
+### 5.4 Comprobante PDF e impresión
+
+- En una boleta pagada, pulsa **PDF** para descargar el comprobante con QR.
+- El QR abre la página pública de verificación; no muestra datos personales.
+- Pulsa **Imprimir** para encolar la boleta en la impresora térmica. El worker de impresión la procesa en segundo plano.
+
+### 5.5 Exportar boletas
+
+En el detalle de una rifa, el líder o administrador puede pulsar **Exportar CSV** para descargar el inventario con estados, comprador y fechas.
+
 ## 6. Sorteo
 
 Solo el super administrador puede realizar el sorteo:
@@ -147,8 +162,8 @@ Haz clic en tu avatar (arriba a la derecha) y elige **Panel de control**. Allí 
 | **Seguridad** | Sesión, cambio de contraseña y cierre de sesiones |
 | **API** | Crear y revocar API keys (super admin) |
 | **Auditoría** | Eventos recientes |
-| **Integraciones** | Correo, webhooks e impresión (fase 7) |
-| **Notificaciones** | Preferencias (fase 7) |
+| **Integraciones** | Crear/probar/eliminar webhooks (super admin) |
+| **Notificaciones** | Bandeja de notificaciones y marca de leídas |
 | **Sistema** | Versión, stack y acceso a OpenAPI |
 
 ## 10. Apariencia
@@ -185,10 +200,19 @@ La boleta debe anularse y volver a separarse. El sistema no libera automáticame
 No. El monto se toma del valor de la boleta. Los abonos se definirán en una fase posterior.
 
 **¿Cómo verifico una boleta?**  
-El QR contiene un token aleatorio. En producción se abrirá una página pública que muestra solo el estado, sin datos personales.
+Escanea el QR del comprobante o abre `PUBLIC_WEB_URL/verify/<token>`. La página muestra solo rifa, número, estado y si es ganadora; no expone datos personales.
 
 **¿Dónde veo los errores?**  
 El sistema muestra mensajes claros. Si persiste, comparte el `X-Request-Id` con soporte.
+
+**¿Qué pasa si olvido mi contraseña?**  
+Usa el enlace de recuperación del login. Recibirás un correo con un token de un solo uso. Si no llega, contacta al administrador.
+
+**¿Por qué no veo el botón Imprimir?**  
+Solo aparece para boletas pagadas/ganadoras y para el vendedor propietario o super administrador. La impresora se configura en el servidor.
+
+**¿Cómo recibo mis notificaciones?**  
+En el panel de control, pestaña **Notificaciones**. También se generan al aprobar rifas o confirmar pagos.
 
 ## 13. Buenas prácticas de seguridad
 

@@ -37,9 +37,12 @@ final class Rbac
         'api_keys.read',
         'api_keys.create',
         'api_keys.revoke',
+        'webhooks.read',
+        'webhooks.manage',
         'audit.read',
         'settings.read',
         'settings.update',
+        'print.enqueue',
     ];
 
     /** @var array<string, list<string>> */
@@ -70,6 +73,7 @@ final class Rbac
             'tickets.reserve',
             'tickets.sell',
             'tickets.pay',
+            'print.enqueue',
             'buyers.read',
             'buyers.create',
             'buyers.update',

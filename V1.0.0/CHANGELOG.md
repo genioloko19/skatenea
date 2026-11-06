@@ -23,6 +23,16 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y [
 - OpenAPI 3.1, manual técnico, manual de usuario y plan de QA.
 - Pruebas unitarias PHPUnit, PHPStan, PHPCS y smoke E2E con Playwright.
 - 46 capturas de evidencia visual.
+- Correo transaccional en cola (`email_outbox`) con worker y plantillas.
+- Recuperación de contraseña con token de un solo uso.
+- Bloqueo temporal de cuenta por intentos fallidos.
+- Webhooks con firma HMAC-SHA256, reintentos y mitigación SSRF.
+- Impresión térmica desacoplada en cola (`print_jobs`) con worker.
+- PDF de comprobante con QR verificable.
+- Exportaciones CSV de rifas y auditoría.
+- Notificaciones internas.
+- Pruebas E2E por roles (23 checks), axe-core (0 graves) y performance base.
+- Matriz de cumplimiento, modelo de amenazas, ASVS y documentos legales base.
 
 ### Corregido respecto a V0.0.1
 
@@ -36,6 +46,8 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y [
 
 ### Pendiente
 
-- Correo transaccional, PDF, impresión desacoplada y webhooks (fase 7).
-- Endurecimiento ASVS formal y cumplimiento legal (fase 8).
-- QA E2E completo, accesibilidad automatizada, performance y release (fase 9).
+- Pentest externo ASVS L2 y MFA para super administradores.
+- Revisión legal (Ley 1581 / Ley 643) y autorización de Coljuegos.
+- Verificación de edad/identidad de participantes.
+- Pruebas en Firefox/Safari/Edge y certificación WCAG externa.
+- Despliegue en staging con PHP-FPM/MySQL y release en GitHub.

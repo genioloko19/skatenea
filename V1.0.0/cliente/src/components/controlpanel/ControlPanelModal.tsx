@@ -20,11 +20,13 @@ import { api, ApiError } from '../../api/client';
 import type {
   ApiKey,
   AuditEntry,
+  NotificationEntry,
   Preferences,
   Raffle,
   SettingsPayload,
   Ticket as TicketType,
   User,
+  Webhook,
 } from '../../api/types';
 import { useAuth } from '../../auth/AuthContext';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -71,7 +73,7 @@ export function ControlPanelModal({ open, onClose }: ControlPanelModalProps) {
         { id: 'security', label: 'Seguridad', icon: <ShieldCheck size={17} /> },
         { id: 'api', label: 'API', icon: <KeyRound size={17} />, permission: 'api_keys.read' },
         { id: 'audit', label: 'Auditoría', icon: <ScrollText size={17} />, permission: 'audit.read' },
-        { id: 'integrations', label: 'Integraciones', icon: <Plug size={17} /> },
+        { id: 'integrations', label: 'Integraciones', icon: <Plug size={17} />, permission: 'webhooks.read' },
         { id: 'notifications', label: 'Notificaciones', icon: <Bell size={17} /> },
         { id: 'system', label: 'Sistema', icon: <Monitor size={17} /> },
       ].filter((tab) => !('permission' in tab) || !tab.permission || hasPermission(tab.permission as string)),
@@ -814,38 +816,171 @@ function AuditPanel() {
   );
 }
 
+const WEBHOOK_EVENTS = [
+  'raffle.created', 'raffle.submitted', 'raffle.approved', 'raffle.rejected',
+  'raffle.activated', 'raffle.cancelled', 'raffle.finished', 'ticket.reserved',
+  'ticket.paid', 'ticket.cancelled', '*',
+];
+
 function IntegrationsPanel() {
+  const { toast } = useToast();
+  const [webhooks, setWebhooks] = useState<Webhook[]>([]);
+  const [name, setName] = useState('');
+  const [url, setUrl] = useState('');
+  const [events, setEvents] = useState<string[]>(['ticket.paid']);
+  const [secret, setSecret] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const load = () => {
+    api.webhooks().then((payload) => setWebhooks(payload.webhooks)).catch(() => undefined);
+  };
+  useEffect(load, []);
+
+  const create = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    try {
+      const payload = await api.createWebhook(name, url, events);
+      setSecret(payload.webhook.secret ?? null);
+      setName('');
+      setUrl('');
+      toast('success', 'Webhook creado', 'Guarda el secreto para verificar la firma HMAC.');
+      load();
+    } catch (error) {
+      toast('error', 'No se pudo crear el webhook', error instanceof ApiError ? error.message : undefined);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const test = async (id: string) => {
+    try {
+      await api.testWebhook(id);
+      toast('success', 'Prueba encolada', 'El worker de webhooks entregará el evento.');
+    } catch (error) {
+      toast('error', 'No se pudo probar', error instanceof ApiError ? error.message : undefined);
+    }
+  };
+
+  const remove = async (id: string) => {
+    if (!window.confirm('¿Eliminar este webhook?')) return;
+    try {
+      await api.deleteWebhook(id);
+      toast('success', 'Webhook eliminado');
+      load();
+    } catch (error) {
+      toast('error', 'No se pudo eliminar', error instanceof ApiError ? error.message : undefined);
+    }
+  };
+
   return (
-    <div className="panel-grid">
+    <div className="panel-stack">
       <Card>
-        <CardHeader icon={<Plug size={20} />} title="Correo transaccional" subtitle="Fase 7" />
-        <CardBody><p className="muted-text">Plantillas de bienvenida, recuperación y confirmación de pago. Configuración SMTP fuera del código.</p></CardBody>
+        <CardHeader icon={<Plug size={20} />} title="Webhooks" subtitle="Eventos firmados con HMAC-SHA256 y reintentos con backoff." />
+        <CardBody>
+          <div className="list-stack">
+            {webhooks.map((webhook) => (
+              <div key={webhook.id} className="list-row">
+                <div>
+                  <strong>{webhook.name}</strong>
+                  <small>{webhook.url} · {webhook.events.join(', ')}</small>
+                </div>
+                <div className="row-actions">
+                  <Button size="sm" variant="ghost" onClick={() => test(webhook.id)}>Probar</Button>
+                  <Button size="sm" variant="danger" onClick={() => remove(webhook.id)}>Eliminar</Button>
+                </div>
+              </div>
+            ))}
+            {webhooks.length === 0 && <p className="muted-text">No hay webhooks configurados.</p>}
+          </div>
+        </CardBody>
       </Card>
       <Card>
-        <CardHeader icon={<Bell size={20} />} title="Webhooks" subtitle="Fase 7" />
-        <CardBody><p className="muted-text">Eventos firmados con HMAC y reintentos para integrar tu ecosistema.</p></CardBody>
-      </Card>
-      <Card>
-        <CardHeader icon={<Ticket size={20} />} title="Impresión térmica" subtitle="Fase 7" />
-        <CardBody><p className="muted-text">La impresión se moverá a un servicio/cola desacoplado del servidor web.</p></CardBody>
+        <CardHeader icon={<Plug size={20} />} title="Nuevo webhook" subtitle="Solo se enviarán los eventos seleccionados." />
+        <CardBody>
+          <form className="form-grid" onSubmit={create}>
+            <Input label="Nombre" value={name} onChange={(event) => setName(event.target.value)} required />
+            <Input label="URL HTTPS" type="url" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://mi-sistema.com/webhooks/skatenea" required />
+            <div className="form-grid__full">
+              <span className="field__label">Eventos</span>
+              <div className="scope-grid">
+                {WEBHOOK_EVENTS.map((item) => (
+                  <label key={item} className="check-row">
+                    <input
+                      type="checkbox"
+                      checked={events.includes(item)}
+                      onChange={(event) => setEvents((current) => event.target.checked ? [...current, item] : current.filter((value) => value !== item))}
+                    />
+                    <span>{item}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="form-grid__full panel-actions">
+              <Button type="submit" loading={loading} disabled={events.length === 0}>Crear webhook</Button>
+            </div>
+          </form>
+          {secret && (
+            <div className="secret-box">
+              <span>Secreto de firma (se muestra una sola vez):</span>
+              <code>{secret}</code>
+              <Button size="sm" variant="secondary" icon={<Copy size={15} />} onClick={() => void navigator.clipboard.writeText(secret)}>Copiar</Button>
+            </div>
+          )}
+        </CardBody>
       </Card>
     </div>
   );
 }
 
 function NotificationsPanel() {
+  const { toast } = useToast();
+  const [items, setItems] = useState<NotificationEntry[]>([]);
+  const [unread, setUnread] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    api.notifications()
+      .then((payload) => { setItems(payload.notifications); setUnread(payload.unread); })
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
+  };
+  useEffect(load, []);
+
+  const markAll = async () => {
+    try {
+      await api.markAllNotificationsRead();
+      toast('success', 'Notificaciones marcadas como leídas');
+      load();
+    } catch (error) {
+      toast('error', 'No se pudo actualizar', error instanceof ApiError ? error.message : undefined);
+    }
+  };
+
   return (
     <Card>
-      <CardHeader icon={<Bell size={20} />} title="Preferencias de notificación" subtitle="Fase 7" />
+      <CardHeader
+        icon={<Bell size={20} />}
+        title="Notificaciones"
+        subtitle={`${unread} sin leer de ${items.length}`}
+        actions={<Button size="sm" variant="secondary" onClick={markAll} disabled={unread === 0}>Marcar todas</Button>}
+      />
       <CardBody>
-        <div className="switch-row">
-          <div><strong>Correo de ventas</strong><p className="muted-text">Resumen diario de boletas vendidas y pagos.</p></div>
-          <button type="button" role="switch" aria-checked={false} className="switch" disabled><span /></button>
-        </div>
-        <div className="switch-row">
-          <div><strong>Alertas de seguridad</strong><p className="muted-text">Nuevos inicios de sesión y cambios de rol.</p></div>
-          <button type="button" role="switch" aria-checked={true} className="switch is-on" disabled><span /></button>
-        </div>
+        {loading ? <p className="muted-text">Cargando…</p> : (
+          <div className="list-stack">
+            {items.map((item) => (
+              <div key={item.id} className="list-row">
+                <div>
+                  <strong>{item.title}</strong>
+                  <small>{item.body} · {formatDateTime(item.created_at)}</small>
+                </div>
+                {!item.read_at && <Badge tone="primary">Nueva</Badge>}
+              </div>
+            ))}
+            {items.length === 0 && <p className="muted-text">No tienes notificaciones.</p>}
+          </div>
+        )}
       </CardBody>
     </Card>
   );

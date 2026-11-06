@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Skatenea\Application\Ticket;
 
 use Skatenea\Application\AuditLogger;
+use Skatenea\Application\EventService;
 use Skatenea\Core\Database;
 use Skatenea\Core\HttpException;
 use Skatenea\Core\Request;
@@ -27,6 +28,7 @@ final class TicketService
         private readonly BuyerService $buyerService,
         private readonly PaymentRepositoryInterface $payments,
         private readonly AuditLogger $audit,
+        private readonly EventService $events,
         private readonly Database $database
     ) {
     }
@@ -65,6 +67,10 @@ final class TicketService
         });
 
         $this->audit->record($actor, 'ticket.reserved', 'ticket', $ticket->id, $ticket->toArray(), $result->toArray(), $request);
+        $buyer = $result->buyerId !== null ? $this->buyers->findById($result->buyerId) : null;
+        if ($buyer !== null) {
+            $this->events->ticketReserved($result, $raffle, $buyer, $actor);
+        }
 
         return $result;
     }
@@ -118,6 +124,8 @@ final class TicketService
         });
 
         $this->audit->record($actor, 'ticket.paid', 'ticket', $ticket->id, $ticket->toArray(), $result->toArray(), $request);
+        $buyer = $result->buyerId !== null ? $this->buyers->findById($result->buyerId) : null;
+        $this->events->ticketPaid($result, $raffle, $buyer, $actor);
 
         return $result;
     }
@@ -146,6 +154,11 @@ final class TicketService
             'reason' => $reason,
             'status' => $result->status,
         ], $request);
+        $raffle = $this->raffles->findById($ticket->raffleId);
+        if ($raffle !== null) {
+            $buyer = $ticket->buyerId !== null ? $this->buyers->findById($ticket->buyerId) : null;
+            $this->events->ticketCancelled($result, $raffle, $buyer, $actor, $reason);
+        }
 
         return $result;
     }

@@ -17,6 +17,7 @@ try {
 }
 
 $tables = [
+    'print_jobs', 'webhook_deliveries', 'webhooks', 'email_outbox',
     'notifications', 'password_resets', 'user_preferences', 'settings', 'audit_logs',
     'raffle_approvals', 'payments', 'tickets', 'buyers', 'raffle_sellers', 'raffles',
     'api_keys', 'refresh_tokens', 'users',
@@ -63,11 +64,45 @@ foreach ($statements as $statement) {
         $executed++;
     } catch (Throwable $e) {
         $message = $e->getMessage();
-        if (str_contains($message, 'already exists') || str_contains($message, 'Duplicate key name')) {
+        if (
+            str_contains($message, 'already exists')
+            || str_contains($message, 'Duplicate key name')
+            || str_contains($message, 'duplicate column name')
+            || str_contains($message, 'Duplicate column name')
+        ) {
             continue;
         }
         fwrite(STDERR, "Error ejecutando sentencia:\n{$statement}\n\n{$message}\n");
         exit(1);
+    }
+}
+
+// Migraciones incrementales (se ejecutan siempre; son idempotentes).
+$migrationFiles = glob(dirname(__DIR__, 2) . '/bd/migrations/*.sql') ?: [];
+sort($migrationFiles);
+foreach ($migrationFiles as $migrationFile) {
+    $migrationSql = (string) file_get_contents($migrationFile);
+    $migrationSql = preg_replace('/^\s*--.*$/m', '', $migrationSql) ?? $migrationSql;
+    foreach (array_filter(array_map('trim', explode(';', $migrationSql))) as $statement) {
+        if ($statement === '') {
+            continue;
+        }
+        try {
+            $pdo->exec($statement);
+            $executed++;
+        } catch (Throwable $e) {
+            $message = $e->getMessage();
+            if (
+                str_contains($message, 'already exists')
+                || str_contains($message, 'Duplicate key name')
+                || str_contains($message, 'duplicate column name')
+                || str_contains($message, 'Duplicate column name')
+            ) {
+                continue;
+            }
+            fwrite(STDERR, "Error en migración {$migrationFile}:\n{$statement}\n\n{$message}\n");
+            exit(1);
+        }
     }
 }
 

@@ -109,6 +109,9 @@ final class UserService
         if (isset($payload['status']) && $payload['status'] !== User::STATUS_ACTIVE) {
             $this->refreshTokens->revokeAllForUser($id, gmdate('Y-m-d H:i:s'));
         }
+        if (isset($payload['status']) && $payload['status'] === User::STATUS_ACTIVE) {
+            $this->users->resetFailedLogin($id, gmdate('Y-m-d H:i:s'));
+        }
 
         $this->audit->record($actor, 'user.updated', 'user', $id, $user->toPublicArray(), $updated->toPublicArray(), $request);
 

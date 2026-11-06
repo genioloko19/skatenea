@@ -54,4 +54,9 @@ final class HttpException extends \RuntimeException
     {
         return new self(429, 'too_many_requests', $message);
     }
+
+    public static function locked(string $message = 'La cuenta está bloqueada temporalmente.'): self
+    {
+        return new self(423, 'account_locked', $message);
+    }
 }

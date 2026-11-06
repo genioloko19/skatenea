@@ -1,0 +1,142 @@
+{
+  "generatedAt": "2026-11-06T11:03:51.383Z",
+  "standard": "WCAG 2.2 AA (axe-core tags wcag2a/wcag2aa/wcag21aa/wcag22aa)",
+  "results": [
+    {
+      "page": "light:landing",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "light:login",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "light:forgot",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "light:reset",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "light:dashboard",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "light:raffles",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "light:tickets",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "light:users",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "light:audit",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "dark:landing",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "dark:login",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "dark:forgot",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "dark:reset",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "dark:dashboard",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "dark:raffles",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "dark:tickets",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "dark:users",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "dark:audit",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "contrast:landing",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "contrast:login",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "contrast:forgot",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "contrast:reset",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "contrast:dashboard",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "contrast:raffles",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "contrast:tickets",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "contrast:users",
+      "violations": [],
+      "serious": 0
+    },
+    {
+      "page": "contrast:audit",
+      "violations": [],
+      "serious": 0
+    }
+  ],
+  "serious": 0
+}

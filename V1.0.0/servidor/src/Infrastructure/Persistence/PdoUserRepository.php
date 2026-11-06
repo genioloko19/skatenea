@@ -78,7 +78,8 @@ final class PdoUserRepository extends PdoRepository implements UserRepositoryInt
     {
         $allowed = [
             'email', 'password_hash', 'full_name', 'role', 'status', 'phone',
-            'document_type', 'document_number', 'must_change_password', 'last_login_at', 'updated_at',
+            'document_type', 'document_number', 'must_change_password', 'failed_login_attempts',
+            'locked_until', 'last_login_at', 'updated_at',
         ];
         $data = array_intersect_key($data, array_flip($allowed));
         if ($data !== []) {
@@ -102,6 +103,23 @@ final class PdoUserRepository extends PdoRepository implements UserRepositoryInt
         $this->execute(
             'UPDATE users SET password_hash = :hash, must_change_password = 0, updated_at = :at WHERE id = :id',
             ['id' => $id, 'hash' => $hash, 'at' => $at]
+        );
+    }
+
+    public function recordFailedLogin(string $id, int $attempts, ?string $lockedUntil, string $at): void
+    {
+        $this->execute(
+            'UPDATE users SET failed_login_attempts = :attempts, locked_until = :locked_until, updated_at = :at
+             WHERE id = :id',
+            ['id' => $id, 'attempts' => $attempts, 'locked_until' => $lockedUntil, 'at' => $at]
+        );
+    }
+
+    public function resetFailedLogin(string $id, string $at): void
+    {
+        $this->execute(
+            'UPDATE users SET failed_login_attempts = 0, locked_until = NULL, updated_at = :at WHERE id = :id',
+            ['id' => $id, 'at' => $at]
         );
     }
 

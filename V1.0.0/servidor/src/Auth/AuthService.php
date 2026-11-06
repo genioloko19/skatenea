@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Skatenea\Auth;
 
 use Skatenea\Application\AuditLogger;
+use Skatenea\Application\Mail\MailService;
 use Skatenea\Core\Config;
 use Skatenea\Core\Database;
 use Skatenea\Core\HttpException;
@@ -23,6 +24,7 @@ final class AuthService
         private readonly JwtService $jwt,
         private readonly PasswordService $passwords,
         private readonly AuditLogger $audit,
+        private readonly MailService $mail,
         private readonly Config $config,
         private readonly Database $database
     ) {
@@ -32,7 +34,20 @@ final class AuthService
     public function login(string $email, string $password, Request $request): array
     {
         $user = $this->users->findByEmail($email);
+        if ($user !== null && $user->isLocked()) {
+            $this->audit->record($user, 'auth.login_locked', 'user', $user->id, [], [], $request);
+            throw HttpException::locked('La cuenta está bloqueada temporalmente. Intenta más tarde.');
+        }
         if ($user === null || !$this->passwords->verify($password, $user->passwordHash)) {
+            if ($user !== null) {
+                $max = $this->config->int('LOGIN_MAX_ATTEMPTS', 8);
+                $window = $this->config->int('LOGIN_WINDOW_SECONDS', 900);
+                $attempts = $user->failedLoginAttempts + 1;
+                $lockedUntil = $attempts >= $max
+                    ? gmdate('Y-m-d H:i:s', time() + $window)
+                    : null;
+                $this->users->recordFailedLogin($user->id, $attempts, $lockedUntil, gmdate('Y-m-d H:i:s'));
+            }
             $this->audit->record(
                 null,
                 'auth.login_failed',
@@ -48,6 +63,9 @@ final class AuthService
         if (!$user->isActive()) {
             $this->audit->record($user, 'auth.login_inactive', 'user', $user->id, [], [], $request);
             throw HttpException::unauthorized('La cuenta no está activa.');
+        }
+        if ($user->failedLoginAttempts > 0) {
+            $this->users->resetFailedLogin($user->id, gmdate('Y-m-d H:i:s'));
         }
 
         if ($this->passwords->needsRehash($user->passwordHash)) {
@@ -186,6 +204,11 @@ final class AuthService
         });
 
         $this->audit->record($user, 'auth.buyer_registered', 'user', $user->id, [], [], $request, 'anonymous');
+        try {
+            $this->mail->queueWelcome($user);
+        } catch (\Throwable $e) {
+            error_log('No se pudo encolar el correo de bienvenida: ' . $e->getMessage());
+        }
 
         return $user->toPublicArray();
     }
@@ -200,6 +223,7 @@ final class AuthService
         }
 
         $this->users->updatePassword($user->id, $this->passwords->hash($newPassword), gmdate('Y-m-d H:i:s'));
+        $this->users->resetFailedLogin($user->id, gmdate('Y-m-d H:i:s'));
         $this->refreshTokens->revokeAllForUser($user->id, gmdate('Y-m-d H:i:s'));
         $this->audit->record($user, 'auth.password_changed', 'user', $user->id, [], [], $request);
     }

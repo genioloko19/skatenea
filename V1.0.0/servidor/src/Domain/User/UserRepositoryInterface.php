@@ -25,6 +25,10 @@ interface UserRepositoryInterface
 
     public function updatePassword(string $id, string $hash, string $at): void;
 
+    public function recordFailedLogin(string $id, int $attempts, ?string $lockedUntil, string $at): void;
+
+    public function resetFailedLogin(string $id, string $at): void;
+
     public function emailExists(string $email, ?string $exceptId = null): bool;
 
     /** @return array<string, int> */

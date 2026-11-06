@@ -123,6 +123,7 @@ export function LoginPage() {
           </div>
 
           <p className="auth-switch">¿No tienes cuenta? <Link to="/register">Regístrate como comprador</Link></p>
+          <p className="auth-switch"><Link to="/forgot-password">¿Olvidaste tu contraseña?</Link></p>
         </section>
       </div>
     </div>

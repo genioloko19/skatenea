@@ -440,6 +440,17 @@
 .auth-shell--register {
   min-height: 680px;
 }
+.auth-shell--compact {
+  min-height: 480px;
+  max-width: 940px;
+}
+.verify-card {
+  width: min(620px, 100%);
+}
+.verify-details {
+  width: 100%;
+  margin-top: 10px;
+}
 
 /* ---------- Estados / error ---------- */
 .state-page {

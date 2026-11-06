@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw, ScrollText } from 'lucide-react';
+import { Download, RefreshCw, ScrollText } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import type { AuditEntry } from '../api/types';
 import { useToast } from '../components/ui/Toast';
@@ -24,13 +24,32 @@ export function AuditPage() {
 
   useEffect(load, []);
 
+  const exportCsv = async () => {
+    try {
+      const blob = await api.download('/audit/export.csv');
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = 'auditoria-skatenea.csv';
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast('error', 'No se pudo exportar', error instanceof ApiError ? error.message : undefined);
+    }
+  };
+
   return (
     <div className="page-stack">
       <PageHeader
         eyebrow="Gobierno"
         title="Auditoría"
         subtitle="Registro append-only de las operaciones críticas del sistema."
-        actions={<Button variant="secondary" icon={<RefreshCw size={16} />} onClick={load}>Actualizar</Button>}
+        actions={
+          <>
+            <Button variant="secondary" icon={<Download size={16} />} onClick={exportCsv}>Exportar CSV</Button>
+            <Button variant="secondary" icon={<RefreshCw size={16} />} onClick={load}>Actualizar</Button>
+          </>
+        }
       />
 
       {loading ? <PageLoader label="Cargando auditoría…" /> : entries.length === 0 ? (

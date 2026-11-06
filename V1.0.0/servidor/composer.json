@@ -5,13 +5,16 @@
     "license": "proprietary",
     "require": {
         "php": ">=8.2",
-        "ext-pdo": "*",
         "ext-json": "*",
         "ext-mbstring": "*",
         "ext-openssl": "*",
+        "ext-pdo": "*",
         "firebase/php-jwt": "^7.0",
-        "vlucas/phpdotenv": "^5.6",
-        "monolog/monolog": "^3.7"
+        "monolog/monolog": "^3.7",
+        "mpdf/mpdf": "^8.3.1",
+        "mpdf/qrcode": "^1.2",
+        "phpmailer/phpmailer": "^7.1.1",
+        "vlucas/phpdotenv": "^5.6"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.0",
@@ -40,7 +43,11 @@
             "@test"
         ],
         "migrate": "php bin/migrate.php",
-        "seed": "php bin/seed.php"
+        "seed": "php bin/seed.php",
+        "worker:mail": "php bin/mail-worker.php",
+        "worker:webhook": "php bin/webhook-worker.php",
+        "worker:print": "php bin/print-worker.php",
+        "maintenance": "php bin/maintenance.php"
     },
     "config": {
         "sort-packages": true,

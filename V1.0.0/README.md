@@ -34,6 +34,11 @@ php -r "echo bin2hex(random_bytes(48)), PHP_EOL;"
 php bin/migrate.php --fresh
 php bin/seed.php
 php -S 127.0.0.1:8000 -t public public/index.php
+
+# En otra terminal: workers de correo, webhooks e impresión
+php bin/mail-worker.php
+php bin/webhook-worker.php
+php bin/print-worker.php
 ```
 
 API: `http://127.0.0.1:8000/api/v1/health`
@@ -86,6 +91,10 @@ composer stan        # PHPStan nivel 6
 composer quality     # lint + stan + test
 php bin/migrate.php --fresh
 php bin/seed.php
+php bin/mail-worker.php --once
+php bin/webhook-worker.php --once
+php bin/print-worker.php --once
+php bin/maintenance.php
 ```
 
 ### Cliente
@@ -97,6 +106,9 @@ npm run build
 npm run lint         # TypeScript --noEmit
 npm run test         # Vitest
 npm run qa:smoke     # QA visual con Chrome + capturas
+npm run qa:e2e       # E2E por roles
+npm run qa:axe       # Accesibilidad WCAG 2.2 AA
+npm run qa:perf      # Performance base con ApacheBench
 ```
 
 ## 5. Seguridad implementada
@@ -105,11 +117,16 @@ npm run qa:smoke     # QA visual con Chrome + capturas
 - JWT HS256 de 15 minutos, refresh token opaco rotativo en cookie HttpOnly.
 - CSRF double-submit para refresh.
 - RBAC por permisos y verificación de propiedad de recursos.
-- Rate limiting global y específico para login/registro/refresh.
+- Rate limiting global y específico para login/registro/refresh/recuperación.
+- Bloqueo temporal de cuenta tras intentos fallidos.
+- Recuperación de contraseña con token de un solo uso y revocación de sesiones.
 - Hash de contraseñas con `password_hash` (bcrypt/Argon2 según PHP).
 - Validación de entrada y escape de salida.
 - Auditoría append-only de operaciones críticas.
 - API keys con prefijo, hash, scopes, expiración y revocación.
+- Webhooks con firma HMAC y protección SSRF.
+- Impresión térmica desacoplada en cola.
+- PDF con QR verificable y exportaciones CSV.
 - Cabeceras de seguridad y CORS por lista blanca.
 - Secretos fuera del código vía `.env`.
 
@@ -121,9 +138,17 @@ Ver `../INFORMES/V0.0.1/` para la auditoría que originó este refactor.
 - [ADRs](docs/adr/)
 - [OpenAPI](docs/api/openapi.yaml)
 - [Manual técnico](docs/manual-tecnico/MANUAL_TECNICO.md)
+- [Integraciones](docs/manual-tecnico/INTEGRACIONES.md)
 - [Manual de usuario](docs/manual-usuario/MANUAL_USUARIO.md)
 - [Plan de QA](docs/qa/QA_PLAN.md)
 - [Resultados de QA](docs/qa/QA_RESULTS.md)
+- [E2E](docs/qa/E2E_REPORT.md)
+- [Accesibilidad](docs/qa/ACCESSIBILITY_REPORT.md)
+- [Performance](docs/qa/PERFORMANCE_REPORT.md)
+- [Checklist de release](docs/qa/RELEASE_CHECKLIST.md)
+- [Matriz de cumplimiento](docs/compliance/MATRIZ_CUMPLIMIENTO.md)
+- [Modelo de amenazas](docs/security/MODELO_AMENAZAS.md)
+- [Checklist ASVS](docs/security/ASVS_CHECKLIST.md)
 - [Base de datos](bd/README.md)
 - [Servidor](servidor/README.md)
 - [Cliente](cliente/README.md)
@@ -139,9 +164,9 @@ Ver `../INFORMES/V0.0.1/` para la auditoría que originó este refactor.
 | 4 — Rifas, boletas y pagos | ✅ flujo principal |
 | 5 — Shell de cliente y diseño | ✅ |
 | 6 — Portales por rol | ✅ base funcional |
-| 7 — Integraciones | 🟡 pendiente (correo, PDF, impresión, webhooks) |
-| 8 — Endurecimiento y cumplimiento | 🟡 pendiente (ASVS formal, legal) |
-| 9 — QA complejo y release | 🟡 QA smoke ejecutado; falta E2E completo, accesibilidad y performance |
+| 7 — Integraciones | ✅ correo, PDF/QR, impresión en cola, webhooks, exportaciones |
+| 8 — Endurecimiento y cumplimiento | 🟡 técnico implementado; faltan pentest, MFA, revisión legal y Coljuegos |
+| 9 — QA complejo y release | ✅ QA smoke/E2E/axe/perf; 🟡 release y push pendientes |
 
 ## 8. Licencia
 

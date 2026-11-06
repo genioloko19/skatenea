@@ -8,6 +8,7 @@ import type {
   Dashboard,
   DashboardPayload,
   MePayload,
+  NotificationEntry,
   Preferences,
   Raffle,
   RaffleDetail,
@@ -17,6 +18,9 @@ import type {
   Ticket,
   TicketsPayload,
   UsersPayload,
+  VerifyResult,
+  Webhook,
+  WebhookDelivery,
 } from './types';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1';
@@ -186,6 +190,31 @@ export class ApiClient {
     return payload;
   }
 
+  async download(path: string, retry = true): Promise<Blob> {
+    const headers = new Headers({ Accept: '*/*' });
+    if (this.accessToken) {
+      headers.set('Authorization', `Bearer ${this.accessToken}`);
+    }
+    const response = await fetch(`${API_BASE}${path}`, { headers, credentials: 'include' });
+    if (response.status === 401 && retry) {
+      const refreshed = await this.refresh();
+      if (refreshed) return this.download(path, false);
+    }
+    if (!response.ok) {
+      let message = `Error HTTP ${response.status}`;
+      let code = 'http_error';
+      try {
+        const payload = await response.json() as { error?: { message?: string; code?: string } };
+        message = payload.error?.message ?? message;
+        code = payload.error?.code ?? code;
+      } catch {
+        // respuesta binaria o vacía
+      }
+      throw new ApiError(message, response.status, code);
+    }
+    return response.blob();
+  }
+
   async logout(): Promise<void> {
     try {
       await this.request<void>('/auth/logout', { method: 'POST' }, false);
@@ -210,6 +239,25 @@ export class ApiClient {
       method: 'POST',
       body: JSON.stringify(input),
     });
+  }
+
+  forgotPassword(email: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  resetPassword(token: string, password: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+  }
+
+  verifyTicket(token: string): Promise<VerifyResult> {
+    return this.request<{ verification: VerifyResult }>(`/public/tickets/verify/${encodeURIComponent(token)}`)
+      .then((payload) => payload.verification);
   }
 
   changePassword(currentPassword: string, newPassword: string): Promise<void> {
@@ -306,6 +354,52 @@ export class ApiClient {
       method: 'POST',
       body: JSON.stringify({ reason }),
     });
+  }
+
+  printTicket(id: string): Promise<{ print_job: { id: string; status: string } }> {
+    return this.request<{ print_job: { id: string; status: string } }>(`/tickets/${id}/print`, { method: 'POST' });
+  }
+
+  notifications(): Promise<{ notifications: NotificationEntry[]; unread: number }> {
+    return this.request<{ notifications: NotificationEntry[]; unread: number }>('/notifications');
+  }
+
+  markNotificationRead(id: string): Promise<void> {
+    return this.request<void>(`/notifications/${id}/read`, { method: 'PATCH' });
+  }
+
+  markAllNotificationsRead(): Promise<void> {
+    return this.request<void>('/notifications/read-all', { method: 'POST' });
+  }
+
+  webhooks(): Promise<{ webhooks: Webhook[] }> {
+    return this.request<{ webhooks: Webhook[] }>('/webhooks');
+  }
+
+  createWebhook(name: string, url: string, events: string[]): Promise<{ webhook: Webhook }> {
+    return this.request<{ webhook: Webhook }>('/webhooks', {
+      method: 'POST',
+      body: JSON.stringify({ name, url, events }),
+    });
+  }
+
+  updateWebhook(id: string, data: Partial<Pick<Webhook, 'name' | 'url' | 'events' | 'active'>>): Promise<{ webhook: Webhook }> {
+    return this.request<{ webhook: Webhook }>(`/webhooks/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  deleteWebhook(id: string): Promise<void> {
+    return this.request<void>(`/webhooks/${id}`, { method: 'DELETE' });
+  }
+
+  testWebhook(id: string): Promise<{ delivery_id: string; status: string }> {
+    return this.request<{ delivery_id: string; status: string }>(`/webhooks/${id}/test`, { method: 'POST' });
+  }
+
+  webhookDeliveries(id: string): Promise<{ deliveries: WebhookDelivery[] }> {
+    return this.request<{ deliveries: WebhookDelivery[] }>(`/webhooks/${id}/deliveries`);
   }
 
   searchBuyers(term: string): Promise<BuyersPayload> {

@@ -142,9 +142,9 @@
   --muted: #52607a;
   --border: rgba(15, 23, 42, 0.12);
   --border-strong: rgba(15, 23, 42, 0.22);
-  --primary: color-mix(in srgb, var(--theme-primary) 72%, #0f172a);
-  --secondary: color-mix(in srgb, var(--theme-secondary) 68%, #0f172a);
-  --accent: color-mix(in srgb, var(--theme-accent) 78%, #0f172a);
+  --primary: color-mix(in srgb, var(--theme-primary) 45%, #0f172a);
+  --secondary: color-mix(in srgb, var(--theme-secondary) 45%, #0f172a);
+  --accent: color-mix(in srgb, var(--theme-accent) 55%, #0f172a);
   --success: #15803d;
   --warning: #b45309;
   --danger: #be123c;

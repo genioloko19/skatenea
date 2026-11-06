@@ -23,12 +23,12 @@ cliente/
 │   │   ├── layout/     AppShell, Header, Sidebar, Background
 │   │   ├── controlpanel/  Modal con pestañas
 │   │   └── ui/         Button, Field, Card, Modal, Tabs, Toast, etc.
-│   ├── pages/          Landing, login, registro, dashboard, rifas, boletas…
+│   ├── pages/          Landing, login, registro, recuperación, verificación, dashboard, rifas, boletas…
 │   ├── routes/         Rutas protegidas y permisos
 │   ├── lib/            Utilidades de formato y clases
 │   └── styles/         Tokens, base, componentes y páginas
-├── scripts/qa-smoke.mjs  QA visual con Chrome + capturas
-└── public/             Recursos estáticos
+├── scripts/            QA smoke, E2E, accesibilidad y performance
+└── public/             Recursos estáticos y cabeceras de seguridad
 ```
 
 ## Arranque
@@ -56,6 +56,9 @@ npm run build
 | `npm run lint` | TypeScript sin emitir |
 | `npm run test` | Vitest |
 | `npm run qa:smoke` | Smoke test + 46 capturas |
+| `npm run qa:e2e` | E2E por roles (23 checks) |
+| `npm run qa:axe` | Accesibilidad WCAG 2.2 AA |
+| `npm run qa:perf` | Performance con ApacheBench |
 
 ## Panel de control
 
@@ -95,3 +98,5 @@ Genera:
 - `../docs/qa/smoke-result.json`
 - `../docs/assets/screenshots/01-public-landing.png` … `10-audit.png`
 - `../docs/assets/screenshots/theme-<tema>-<modo>.png` (36 capturas)
+
+E2E, accesibilidad y performance generan `e2e-result.json`, `axe-result.json` y `perf-result.json` en `../docs/qa/`.

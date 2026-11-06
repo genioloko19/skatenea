@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Skatenea\Http\Controllers;
 
+use Skatenea\Application\Export\ExportService;
 use Skatenea\Application\Raffle\RaffleService;
 use Skatenea\Core\HttpException;
 use Skatenea\Core\Request;
@@ -18,7 +19,8 @@ final class RaffleController extends BaseController
     public function __construct(
         private readonly RaffleService $service,
         private readonly RaffleRepositoryInterface $raffles,
-        private readonly TicketRepositoryInterface $tickets
+        private readonly TicketRepositoryInterface $tickets,
+        private readonly ExportService $exports
     ) {
     }
 
@@ -241,6 +243,25 @@ final class RaffleController extends BaseController
     {
         return Response::data([
             'verification' => $this->service->verifyTicket((string) $request->param('token')),
+        ]);
+    }
+
+    public function exportTickets(Request $request): Response
+    {
+        $user = $this->user($request);
+        $raffle = $this->service->findOrFail((string) $request->param('id'));
+        $this->service->assertCanView($user, $raffle);
+        $filters = [];
+        if ($user->role === User::ROLE_SELLER) {
+            $filters['seller_id'] = $user->id;
+        }
+        $tickets = $this->tickets->byRaffle($raffle->id, $filters + ['limit' => 100000]);
+        $csv = $this->exports->ticketsCsv($raffle, $tickets);
+
+        return new Response(200, $csv, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="rifa-' . $raffle->code . '.csv"',
+            'Cache-Control' => 'private, no-store',
         ]);
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Skatenea\Application\Raffle;
 
 use Skatenea\Application\AuditLogger;
+use Skatenea\Application\EventService;
 use Skatenea\Core\Database;
 use Skatenea\Core\HttpException;
 use Skatenea\Core\Request;
@@ -22,6 +23,7 @@ final class RaffleService
         private readonly TicketRepositoryInterface $tickets,
         private readonly UserRepositoryInterface $users,
         private readonly AuditLogger $audit,
+        private readonly EventService $events,
         private readonly Database $database
     ) {
     }
@@ -81,6 +83,7 @@ final class RaffleService
         ]);
 
         $this->audit->record($actor, 'raffle.created', 'raffle', $raffle->id, [], $raffle->toArray(), $request);
+        $this->events->raffleCreated($raffle);
 
         return $raffle;
     }
@@ -148,6 +151,7 @@ final class RaffleService
         ]);
         $this->recordApproval($raffle->id, $actor->id, 'submitted');
         $this->audit->record($actor, 'raffle.submitted', 'raffle', $id, $raffle->toArray(), $updated->toArray(), $request);
+        $this->events->raffleSubmitted($updated, $actor);
 
         return $updated;
     }
@@ -170,6 +174,10 @@ final class RaffleService
         ]);
         $this->recordApproval($raffle->id, $actor->id, 'approved', $reason);
         $this->audit->record($actor, 'raffle.approved', 'raffle', $id, $raffle->toArray(), $updated->toArray(), $request);
+        $leader = $this->users->findById($raffle->createdBy);
+        if ($leader !== null) {
+            $this->events->raffleApproved($updated, $leader);
+        }
 
         return $updated;
     }
@@ -192,6 +200,10 @@ final class RaffleService
         ]);
         $this->recordApproval($raffle->id, $actor->id, 'rejected', $reason);
         $this->audit->record($actor, 'raffle.rejected', 'raffle', $id, $raffle->toArray(), $updated->toArray(), $request);
+        $leader = $this->users->findById($raffle->createdBy);
+        if ($leader !== null) {
+            $this->events->raffleRejected($updated, $leader, $reason);
+        }
 
         return $updated;
     }
@@ -209,6 +221,7 @@ final class RaffleService
             'updated_at' => gmdate('Y-m-d H:i:s'),
         ]);
         $this->audit->record($actor, 'raffle.activated', 'raffle', $id, $raffle->toArray(), $updated->toArray(), $request);
+        $this->events->raffleActivated($updated);
 
         return $updated;
     }
@@ -245,6 +258,7 @@ final class RaffleService
         ]);
         $this->recordApproval($raffle->id, $actor->id, 'cancelled', $reason);
         $this->audit->record($actor, 'raffle.cancelled', 'raffle', $id, $raffle->toArray(), $updated->toArray(), $request);
+        $this->events->raffleCancelled($updated, $reason);
 
         return $updated;
     }
@@ -383,6 +397,10 @@ final class RaffleService
             'winner_ticket_id' => $winnerId,
             'seed_hash' => $seedHash,
         ], $request);
+        $finished = $this->raffles->findById($id);
+        if ($finished !== null) {
+            $this->events->raffleFinished($finished, $winner);
+        }
 
         return [
             'raffle_id' => $id,

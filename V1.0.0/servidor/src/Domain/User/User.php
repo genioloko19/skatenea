@@ -28,7 +28,9 @@ final class User
         public readonly bool $mustChangePassword,
         public readonly ?string $lastLoginAt,
         public readonly string $createdAt,
-        public readonly string $updatedAt
+        public readonly string $updatedAt,
+        public readonly int $failedLoginAttempts = 0,
+        public readonly ?string $lockedUntil = null
     ) {
     }
 
@@ -48,13 +50,20 @@ final class User
             (bool) ($row['must_change_password'] ?? false),
             isset($row['last_login_at']) ? (string) $row['last_login_at'] : null,
             (string) $row['created_at'],
-            (string) $row['updated_at']
+            (string) $row['updated_at'],
+            (int) ($row['failed_login_attempts'] ?? 0),
+            isset($row['locked_until']) ? (string) $row['locked_until'] : null
         );
     }
 
     public function isActive(): bool
     {
         return $this->status === self::STATUS_ACTIVE;
+    }
+
+    public function isLocked(): bool
+    {
+        return $this->lockedUntil !== null && strtotime($this->lockedUntil) > time();
     }
 
     public function isSuperAdmin(): bool
@@ -78,6 +87,7 @@ final class User
             'last_login_at' => $this->lastLoginAt,
             'created_at' => $this->createdAt,
             'updated_at' => $this->updatedAt,
+            'locked_until' => $this->lockedUntil,
         ];
     }
 }

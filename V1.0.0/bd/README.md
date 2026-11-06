@@ -20,6 +20,10 @@ Esquema portable para MySQL 8+/MariaDB 10.6+ y SQLite 3.35+. No usa `ENUM` ni `J
 | `user_preferences` | Tema, modo, geometría, fondo y sidebar |
 | `password_resets` | Tokens de recuperación de un solo uso |
 | `notifications` | Notificaciones por usuario |
+| `email_outbox` | Cola de correos transaccionales |
+| `webhooks` | Integraciones salientes con secretos HMAC |
+| `webhook_deliveries` | Entregas, reintentos y códigos de respuesta |
+| `print_jobs` | Cola de impresión térmica desacoplada |
 
 ## Diagrama
 
@@ -57,6 +61,8 @@ available → reserved → paid → winner
 ```
 
 ## Migración
+
+`bin/migrate.php` ejecuta `schema.sql` y luego las migraciones incrementales de `bd/migrations/` (idempotentes).
 
 ### SQLite (desarrollo)
 

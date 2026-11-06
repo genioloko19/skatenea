@@ -17,6 +17,15 @@ Generadas automáticamente con `npm run qa:smoke` (Playwright + Chrome headless,
 | 9 | ![Usuarios](09-users.png) |
 | 10 | ![Auditoría](10-audit.png) |
 
+## Evidencia E2E
+
+| Captura | Escenario |
+|---|---|
+| `qa-e2e-approvals.png` | Aprobación de rifa por super administrador |
+| `qa-e2e-raffle-managed.png` | Rifa activa con boletas y vendedores |
+| `qa-e2e-ticket-paid.png` | Boleta pagada por el vendedor |
+| `qa-e2e-verify.png` | Verificación pública por QR |
+
 ## 12 temas × 3 modos
 
 | Tema | Claro | Oscuro | Alto contraste |

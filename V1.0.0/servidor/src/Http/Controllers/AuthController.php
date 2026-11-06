@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Skatenea\Http\Controllers;
 
+use Skatenea\Application\PasswordReset\PasswordResetService;
 use Skatenea\Application\PreferencesService;
 use Skatenea\Auth\AuthService;
 use Skatenea\Auth\CookieService;
@@ -17,7 +18,8 @@ final class AuthController extends BaseController
         private readonly AuthService $auth,
         private readonly CookieService $cookies,
         private readonly Rbac $rbac,
-        private readonly PreferencesService $preferences
+        private readonly PreferencesService $preferences,
+        private readonly PasswordResetService $passwordReset
     ) {
     }
 
@@ -91,6 +93,29 @@ final class AuthController extends BaseController
         $user = $this->auth->registerBuyer($data, $request);
 
         return Response::data(['user' => $user], 201);
+    }
+
+    public function forgotPassword(Request $request): Response
+    {
+        $data = $this->validated($request, [
+            'email' => 'required|string|email|max:190',
+        ]);
+        $this->passwordReset->request((string) $data['email'], $request);
+
+        return Response::data([
+            'message' => 'Si la cuenta existe, enviaremos un enlace de recuperación al correo registrado.',
+        ], 202);
+    }
+
+    public function resetPassword(Request $request): Response
+    {
+        $data = $this->validated($request, [
+            'token' => 'required|string|min:16|max:255',
+            'password' => 'required|string|min:12|max:255',
+        ]);
+        $this->passwordReset->reset((string) $data['token'], (string) $data['password'], $request);
+
+        return Response::data(['message' => 'Contraseña actualizada. Inicia sesión nuevamente.']);
     }
 
     public function changePassword(Request $request): Response

@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   CircleDollarSign,
   Clock3,
+  Download,
   Gift,
   Hash,
   Play,
@@ -98,6 +99,23 @@ export function RaffleDetailPage() {
       const result = await api.assignTickets(raffle.id, range.seller_id, range.from, range.to);
       toast('success', 'Rango asignado', `${result.updated} boletas actualizadas.`);
     });
+  };
+
+  const exportCsv = async () => {
+    setBusy('export');
+    try {
+      const blob = await api.download(`/raffles/${raffle.id}/export.csv`);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `rifa-${raffle.code}.csv`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast('error', 'No se pudo exportar', error instanceof ApiError ? error.message : undefined);
+    } finally {
+      setBusy(null);
+    }
   };
 
   const draw = async () => {
@@ -259,6 +277,9 @@ export function RaffleDetailPage() {
                 )}
                 {hasPermission('raffles.approve') && ['active', 'closed'].includes(raffle.status) && (
                   <Button variant="success" loading={busy === 'draw'} onClick={draw}><Trophy size={17} /> Realizar sorteo</Button>
+                )}
+                {canManage && (
+                  <Button variant="secondary" icon={<Download size={17} />} loading={busy === 'export'} onClick={exportCsv}>Exportar CSV</Button>
                 )}
                 {raffle.status === 'finished' && <div className="alert alert--success">Rifa finalizada. La boleta ganadora y la semilla quedaron registradas.</div>}
               </div>

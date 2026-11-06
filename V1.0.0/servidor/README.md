@@ -13,13 +13,17 @@ servidor/
 │   ├── Core/                 Config, PDO, Router, Request/Response, Validator, RateLimiter, Logger
 │   ├── Auth/                 JWT, refresh, API keys, RBAC, cookies, políticas
 │   ├── Domain/               Entidades e interfaces de repositorio
-│   ├── Application/          Casos de uso y servicios de negocio
-│   ├── Infrastructure/       Repositorios PDO
+│   ├── Application/          Casos de uso, correo, notificaciones, webhooks, impresión, PDF, exports
+│   ├── Infrastructure/       Repositorios PDO, mailer, workers
 │   └── Http/                 Controllers y middleware
-├── bin/migrate.php           Migración del esquema
+├── bin/migrate.php           Migración del esquema + migraciones incrementales
 ├── bin/seed.php              Datos de desarrollo
+├── bin/mail-worker.php       Worker de correo
+├── bin/webhook-worker.php    Worker de webhooks
+├── bin/print-worker.php      Worker de impresión térmica
+├── bin/maintenance.php       Limpieza de tokens y colas
 ├── tests/Unit                Pruebas unitarias
-└── storage/                  Logs y rate limit (fuera del control de versiones)
+└── storage/                  Logs, rate limit, prints y mpdf (fuera de Git)
 ```
 
 ## Capas y dependencias
@@ -74,6 +78,23 @@ Detalles en `../docs/adr/0002-auth-jwt.md`.
 
 `POST /api/v1/api-keys` (solo super administrador) devuelve la clave en claro **una única vez**. El servidor guarda `sha256(key)`, prefijo, scopes y expiración. Se envían con `X-API-Key`.
 
+## Workers e integraciones
+
+```powershell
+php bin/mail-worker.php --once
+php bin/webhook-worker.php --once
+php bin/print-worker.php --once
+php bin/maintenance.php
+```
+
+- Correo: cola `email_outbox`, driver `log|smtp|null`.
+- Webhooks: firma HMAC, reintentos y bloqueo de IP privadas en producción.
+- Impresión: cola `print_jobs`, drivers `file|network|windows|null`.
+- PDF: mPDF + QR en `/tickets/{id}/receipt.pdf`.
+- Exportaciones: `/raffles/{id}/export.csv`, `/audit/export.csv`.
+
+Ver [`docs/manual-tecnico/INTEGRACIONES.md`](../docs/manual-tecnico/INTEGRACIONES.md).
+
 ## Pruebas y calidad
 
 ```powershell
@@ -86,6 +107,7 @@ composer quality
 - PHPUnit 11.
 - PHPStan nivel 6.
 - PSR-12.
+- QA E2E/axe/perf desde `cliente/`.
 
 ## Seguridad operativa
 

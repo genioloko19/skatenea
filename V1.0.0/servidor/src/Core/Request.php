@@ -41,10 +41,15 @@ final class Request
         $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
         $path = $path === '' ? '/' : $path;
 
+        // El servidor embebido de PHP puede fijar SCRIPT_NAME a la ruta solicitada
+        // cuando la URL tiene extensión (.pdf, .csv). Solo usamos SCRIPT_NAME
+        // como base de subdirectorio cuando realmente apunta a un archivo PHP.
         $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
-        $basePath = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
-        if ($basePath !== '' && $basePath !== '/' && str_starts_with($path, $basePath)) {
-            $path = substr($path, strlen($basePath));
+        if (str_ends_with(strtolower($scriptName), '.php')) {
+            $basePath = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+            if ($basePath !== '' && $basePath !== '/' && str_starts_with($path, $basePath)) {
+                $path = substr($path, strlen($basePath));
+            }
         }
         $path = '/' . ltrim($path, '/');
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Skatenea\Http\Controllers;
 
 use Skatenea\Application\Raffle\RaffleService;
+use Skatenea\Application\Receipt\ReceiptService;
 use Skatenea\Application\Ticket\TicketService;
 use Skatenea\Core\HttpException;
 use Skatenea\Core\Request;
@@ -22,7 +23,8 @@ final class TicketController extends BaseController
         private readonly TicketRepositoryInterface $tickets,
         private readonly RaffleRepositoryInterface $raffles,
         private readonly RaffleService $raffleService,
-        private readonly BuyerRepositoryInterface $buyers
+        private readonly BuyerRepositoryInterface $buyers,
+        private readonly ReceiptService $receipts
     ) {
     }
 
@@ -51,25 +53,43 @@ final class TicketController extends BaseController
 
     public function show(Request $request): Response
     {
-        $user = $this->user($request);
         $ticket = $this->service->findOrFail((string) $request->param('id'));
+        $this->assertCanViewTicket($this->user($request), $ticket);
 
+        return Response::data(['ticket' => $ticket->toArray()]);
+    }
+
+    public function receipt(Request $request): Response
+    {
+        $ticket = $this->service->findOrFail((string) $request->param('id'));
+        $this->assertCanViewTicket($this->user($request), $ticket);
+        $pdf = $this->receipts->render($ticket);
+
+        return new Response(200, $pdf, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $this->receipts->fileName($ticket) . '"',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
+    private function assertCanViewTicket(User $user, Ticket $ticket): void
+    {
         if ($user->isSuperAdmin()) {
-            return Response::data(['ticket' => $ticket->toArray()]);
+            return;
         }
         if ($user->role === User::ROLE_SELLER && $ticket->sellerId === $user->id) {
-            return Response::data(['ticket' => $ticket->toArray()]);
+            return;
         }
         if ($user->role === User::ROLE_LEADER) {
             $raffle = $this->raffles->findById($ticket->raffleId);
             if ($raffle !== null && $raffle->belongsTo($user->id)) {
-                return Response::data(['ticket' => $ticket->toArray()]);
+                return;
             }
         }
         if ($user->role === User::ROLE_BUYER) {
             $buyer = $this->buyers->findByUserId($user->id);
             if ($buyer !== null && $ticket->buyerId === $buyer->id) {
-                return Response::data(['ticket' => $ticket->toArray()]);
+                return;
             }
         }
 

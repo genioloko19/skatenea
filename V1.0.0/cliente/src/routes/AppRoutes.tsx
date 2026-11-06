@@ -6,6 +6,9 @@ import { PageLoader } from '../components/ui/Feedback';
 import { PublicLandingPage } from '../pages/PublicLandingPage';
 import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
+import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
+import { ResetPasswordPage } from '../pages/ResetPasswordPage';
+import { VerifyTicketPage } from '../pages/VerifyTicketPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { RafflesPage } from '../pages/RafflesPage';
 import { RaffleDetailPage } from '../pages/RaffleDetailPage';
@@ -49,6 +52,9 @@ export function AppRoutes() {
         <Route path="/" element={<PublicLandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/verify/:token" element={<VerifyTicketPage />} />
 
         <Route element={<RequireAuth />}>
           <Route path="/app" element={<AppShell />}>
