@@ -1,0 +1,36 @@
+{
+  "name": "skatenea-cliente",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "SKATENEA V1 — Cliente React/TypeScript con glassmorphism y 12 temas",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "qa:smoke": "node scripts/qa-smoke.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^1.69.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.5"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "jsdom": "^30.1.3",
+    "playwright-core": "^1.65.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0",
+    "yaml": "^2.9.1"
+  }
+}

@@ -1,0 +1,1445 @@
+﻿openapi: 3.1.0
+info:
+  title: SKATENEA API
+  version: 1.0.0
+  description: |
+    API REST de SKATENEA para la gestiÃ³n multi-rifa.
+
+    - AutenticaciÃ³n de usuario: JWT Bearer de corta duraciÃ³n + refresh token HttpOnly rotativo.
+    - Integraciones: API keys con scopes mediante `X-API-Key`.
+    - Todas las respuestas exitosas usan el sobre `{ "data": ... }`; los errores usan `{ "error": { "code", "message", "details?" } }`.
+    - Fechas en UTC (ISO 8601). Dinero en COP con dos decimales.
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Desarrollo local (PHP built-in server)
+  - url: /api/v1
+    description: ProducciÃ³n (mismo origen)
+tags:
+  - name: Salud
+  - name: AutenticaciÃ³n
+  - name: PÃºblico
+  - name: Dashboard
+  - name: Rifas
+  - name: Boletas
+  - name: Compradores
+  - name: Usuarios
+  - name: Preferencias
+  - name: API Keys
+  - name: AuditorÃ­a
+  - name: ConfiguraciÃ³n
+  - name: Integraciones
+paths:
+  /health:
+    get:
+      tags: [Salud]
+      summary: Estado de la API y la base de datos
+      security: []
+      responses:
+        '200':
+          description: Servicio operativo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Servicio degradado
+  /auth/login:
+    post:
+      tags: [AutenticaciÃ³n]
+      summary: Iniciar sesiÃ³n
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 1, maxLength: 255 }
+      responses:
+        '200':
+          description: SesiÃ³n iniciada. Establece cookies `skatenea_refresh` (HttpOnly) y `skatenea_csrf`.
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /auth/refresh:
+    post:
+      tags: [AutenticaciÃ³n]
+      summary: Rotar la sesiÃ³n usando la cookie de refresh
+      security: []
+      parameters:
+        - in: header
+          name: X-CSRF-Token
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Nueva sesiÃ³n rotada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/logout:
+    post:
+      tags: [AutenticaciÃ³n]
+      summary: Cerrar sesiÃ³n y revocar el refresh token
+      security: []
+      responses:
+        '204': { description: SesiÃ³n cerrada }
+  /auth/register:
+    post:
+      tags: [AutenticaciÃ³n]
+      summary: Registrar una cuenta de comprador
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [full_name, email, password, phone]
+              properties:
+                full_name: { type: string, minLength: 3, maxLength: 150 }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 12 }
+                phone: { type: string, minLength: 7, maxLength: 30 }
+                document_type: { type: string, enum: [CC, CE, PA, NIT] }
+                document_number: { type: string, maxLength: 50 }
+      responses:
+        '201':
+          description: Cuenta creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      user: { $ref: '#/components/schemas/User' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /auth/me:
+    get:
+      tags: [AutenticaciÃ³n]
+      summary: Obtener el usuario autenticado, permisos y preferencias
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: SesiÃ³n actual
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      user: { $ref: '#/components/schemas/User' }
+                      permissions:
+                        type: array
+                        items: { type: string }
+                      preferences: { $ref: '#/components/schemas/Preferences' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/password:
+    patch:
+      tags: [AutenticaciÃ³n]
+      summary: Cambiar la contraseÃ±a y revocar las demÃ¡s sesiones
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password: { type: string }
+                new_password: { type: string, minLength: 12 }
+      responses:
+        '204': { description: ContraseÃ±a actualizada }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /public/raffles:
+    get:
+      tags: [PÃºblico]
+      summary: Listar rifas pÃºblicas activas
+      security: []
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, maximum: 200 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: Listado pÃºblico
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RaffleListResponse'
+  /public/raffles/{id}:
+    get:
+      tags: [PÃºblico]
+      summary: Detalle pÃºblico de una rifa activa
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RaffleId'
+      responses:
+        '200':
+          description: Detalle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RaffleDetailResponse'
+        '404': { $ref: '#/components/responses/NotFound' }
+  /public/tickets/verify/{token}:
+    get:
+      tags: [PÃºblico]
+      summary: Verificar una boleta por token QR
+      security: []
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Resultado de verificaciÃ³n (sin PII)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      verification:
+                        type: object
+                        properties:
+                          valid: { type: boolean }
+                          raffle: { type: string }
+                          number: { type: integer }
+                          status: { type: string }
+                          winner: { type: boolean }
+  /dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Resumen adaptado al rol
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: MÃ©tricas y actividad reciente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+  /raffles:
+    get:
+      tags: [Rifas]
+      summary: Listar rifas segÃºn el rol
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: status
+          schema: { $ref: '#/components/schemas/RaffleStatus' }
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, maximum: 200 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: Listado de rifas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RaffleListResponse'
+    post:
+      tags: [Rifas]
+      summary: Crear una rifa (lÃ­der o super administrador)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRaffleRequest'
+      responses:
+        '201':
+          description: Rifa creada en borrador
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      raffle: { $ref: '#/components/schemas/Raffle' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /raffles/{id}:
+    get:
+      tags: [Rifas]
+      summary: Detalle de una rifa
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/RaffleId'
+      responses:
+        '200':
+          description: Detalle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RaffleDetailResponse'
+    patch:
+      tags: [Rifas]
+      summary: Actualizar una rifa (propietario o super administrador)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/RaffleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRaffleRequest'
+      responses:
+        '200':
+          description: Rifa actualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      raffle: { $ref: '#/components/schemas/Raffle' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /raffles/{id}/submit:
+    post:
+      tags: [Rifas]
+      summary: Enviar una rifa a aprobaciÃ³n
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/RaffleId'
+      responses:
+        '200': { $ref: '#/components/responses/RaffleResponse' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /raffles/{id}/approve:
+    post:
+      tags: [Rifas]
+      summary: Aprobar una rifa (solo super administrador)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/RaffleId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, maxLength: 1000 }
+      responses:
+        '200': { $ref: '#/components/responses/RaffleResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /raffles/{id}/reject:
+    post:
+      tags: [Rifas]
+      summary: Rechazar una rifa (solo super administrador)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/RaffleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 3, maxLength: 1000 }
+      responses:
+        '200': { $ref: '#/components/responses/RaffleResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /raffles/{id}/activate:
+    post:
+      tags: [Rifas]
+      summary: Activar una rifa aprobada
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/RaffleId'
+      responses:
+        '200': { $ref: '#/components/responses/RaffleResponse' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /raffles/{id}/close:
+    post:
+      tags: [Rifas]
+      summary: Cerrar una rifa activa
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/RaffleId'
+      responses:
+        '200': { $ref: '#/components/responses/RaffleResponse' }
+  /raffles/{id}/cancel:
+    post:
+      tags: [Rifas]
+      summary: Cancelar una rifa (solo super administrador)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/RaffleId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, maxLength: 1000 }
+      responses:
+        '200': { $ref: '#/components/responses/RaffleResponse' }
+  /raffles/{id}/sellers:
+    post:
+      tags: [Rifas]
+      summary: Asignar vendedores a una rifa
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/RaffleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [seller_ids]
+              properties:
+                seller_ids:
+                  type: array
+                  minItems: 1
+                  items: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Vendedores asignados
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      sellers:
+                        type: array
+                        items: { type: object }
+  /raffles/{id}/tickets/generate:
+    post:
+      tags: [Rifas]
+      summary: Generar las boletas de una rifa aprobada o activa
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/RaffleId'
+      responses:
+        '201':
+          description: Boletas generadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      ticket_stats:
+                        type: object
+                        additionalProperties: { type: integer }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /raffles/{id}/tickets/assign:
+    post:
+      tags: [Rifas]
+      summary: Asignar un rango de boletas a un vendedor
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/RaffleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [seller_id, from, to]
+              properties:
+                seller_id: { type: string, format: uuid }
+                from: { type: integer, minimum: 1 }
+                to: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Rango actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      updated: { type: integer }
+  /raffles/{id}/draw:
+    post:
+      tags: [Rifas]
+      summary: Realizar el sorteo (solo super administrador)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/RaffleId'
+      responses:
+        '200':
+          description: Ganadora y semilla
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      raffle_id: { type: string }
+                      winner: { $ref: '#/components/schemas/Ticket' }
+                      seed: { type: string }
+                      seed_hash: { type: string }
+                      paid_tickets: { type: integer }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /raffles/{id}/approvals:
+    get:
+      tags: [Rifas]
+      summary: Historial de aprobaciÃ³n
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/RaffleId'
+      responses:
+        '200':
+          description: Eventos de aprobaciÃ³n
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      approvals:
+                        type: array
+                        items: { type: object }
+  /raffles/{id}/tickets:
+    get:
+      tags: [Boletas]
+      summary: Listar boletas de una rifa
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/RaffleId'
+        - in: query
+          name: status
+          schema: { $ref: '#/components/schemas/TicketStatus' }
+        - in: query
+          name: seller_id
+          schema: { type: string, format: uuid }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 1000 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: Boletas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketListResponse'
+  /tickets/mine:
+    get:
+      tags: [Boletas]
+      summary: Boletas del usuario autenticado
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Boletas propias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketListResponse'
+  /tickets/{id}:
+    get:
+      tags: [Boletas]
+      summary: Detalle de una boleta
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      responses:
+        '200':
+          description: Boleta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      ticket: { $ref: '#/components/schemas/Ticket' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /tickets/{id}/reserve:
+    post:
+      tags: [Boletas]
+      summary: Separar una boleta (vendedor propietario o super administrador)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                buyer_id: { type: string, format: uuid }
+                full_name: { type: string, maxLength: 150 }
+                email: { type: string, format: email }
+                phone: { type: string, maxLength: 30 }
+                document_type: { type: string, enum: [CC, CE, PA, NIT] }
+                document_number: { type: string, maxLength: 50 }
+                reservation_hours: { type: integer, minimum: 1, maximum: 168, default: 48 }
+      responses:
+        '200':
+          description: Boleta separada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      ticket: { $ref: '#/components/schemas/Ticket' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /tickets/{id}/pay:
+    post:
+      tags: [Boletas]
+      summary: Registrar el pago de una boleta separada
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [method]
+              properties:
+                method: { type: string, enum: [cash, transfer, card, nequi, daviplata, other] }
+                reference: { type: string, maxLength: 100 }
+      responses:
+        '200':
+          description: Pago registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      ticket: { $ref: '#/components/schemas/Ticket' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /tickets/{id}/cancel:
+    post:
+      tags: [Boletas]
+      summary: Anular una boleta
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, maxLength: 500 }
+      responses:
+        '200':
+          description: Boleta anulada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      ticket: { $ref: '#/components/schemas/Ticket' }
+  /buyers:
+    get:
+      tags: [Compradores]
+      summary: Buscar compradores (mÃ­nimo 2 caracteres)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string, minLength: 2 }
+      responses:
+        '200':
+          description: Resultados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuyerListResponse'
+    post:
+      tags: [Compradores]
+      summary: Registrar un comprador
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [full_name, phone]
+              properties:
+                full_name: { type: string, maxLength: 150 }
+                email: { type: string, format: email }
+                phone: { type: string, maxLength: 30 }
+                document_type: { type: string, enum: [CC, CE, PA, NIT] }
+                document_number: { type: string, maxLength: 50 }
+      responses:
+        '201':
+          description: Comprador creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      buyer: { $ref: '#/components/schemas/Buyer' }
+  /buyers/{id}:
+    get:
+      tags: [Compradores]
+      summary: Detalle de un comprador
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Comprador
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      buyer: { $ref: '#/components/schemas/Buyer' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    patch:
+      tags: [Compradores]
+      summary: Actualizar un comprador
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string }
+                document_type: { type: string }
+                document_number: { type: string }
+      responses:
+        '200':
+          description: Comprador actualizado
+  /sellers:
+    get:
+      tags: [Usuarios]
+      summary: Listar vendedores activos (para asignaciÃ³n)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Vendedores
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+  /users:
+    get:
+      tags: [Usuarios]
+      summary: Listar usuarios (solo super administrador)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: role
+          schema: { type: string, enum: [super_admin, leader, seller, buyer] }
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 100 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: Usuarios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+    post:
+      tags: [Usuarios]
+      summary: Crear un usuario (solo super administrador)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [full_name, email, password, role]
+              properties:
+                full_name: { type: string }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 12 }
+                role: { type: string, enum: [super_admin, leader, seller, buyer] }
+                phone: { type: string }
+                document_type: { type: string, enum: [CC, CE, PA, NIT] }
+                document_number: { type: string }
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      user: { $ref: '#/components/schemas/User' }
+  /users/{id}:
+    get:
+      tags: [Usuarios]
+      summary: Detalle de un usuario
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Usuario
+    patch:
+      tags: [Usuarios]
+      summary: Actualizar un usuario (solo super administrador)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string }
+                role: { type: string, enum: [super_admin, leader, seller, buyer] }
+                status: { type: string, enum: [active, inactive, locked] }
+      responses:
+        '200':
+          description: Usuario actualizado
+    delete:
+      tags: [Usuarios]
+      summary: Desactivar un usuario (solo super administrador)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Usuario desactivado
+  /profile:
+    patch:
+      tags: [Usuarios]
+      summary: Actualizar el perfil propio
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name: { type: string }
+                phone: { type: string }
+                document_type: { type: string, enum: [CC, CE, PA, NIT] }
+                document_number: { type: string }
+      responses:
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      user: { $ref: '#/components/schemas/User' }
+  /preferences:
+    get:
+      tags: [Preferencias]
+      summary: Obtener preferencias visuales
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Preferencias
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      preferences: { $ref: '#/components/schemas/Preferences' }
+    patch:
+      tags: [Preferencias]
+      summary: Actualizar preferencias visuales
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Preferences'
+      responses:
+        '200':
+          description: Preferencias actualizadas
+  /api-keys:
+    get:
+      tags: [API Keys]
+      summary: Listar API keys (solo super administrador)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: API keys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      api_keys:
+                        type: array
+                        items: { $ref: '#/components/schemas/ApiKey' }
+    post:
+      tags: [API Keys]
+      summary: Crear una API key (solo super administrador)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, scopes]
+              properties:
+                name: { type: string, minLength: 3, maxLength: 100 }
+                scopes:
+                  type: array
+                  minItems: 1
+                  items: { type: string }
+                expires_at: { type: [string, 'null'], format: date-time }
+      responses:
+        '201':
+          description: La clave se devuelve una sola vez
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      api_key:
+                        allOf:
+                          - $ref: '#/components/schemas/ApiKey'
+                          - type: object
+                            properties:
+                              key: { type: string }
+  /api-keys/{id}:
+    delete:
+      tags: [API Keys]
+      summary: Revocar una API key
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: API key revocada }
+  /audit:
+    get:
+      tags: [AuditorÃ­a]
+      summary: Consultar auditorÃ­a (solo super administrador)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: actor_id
+          schema: { type: string, format: uuid }
+        - in: query
+          name: entity_type
+          schema: { type: string }
+        - in: query
+          name: entity_id
+          schema: { type: string }
+        - in: query
+          name: action
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 100 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: Registros de auditorÃ­a
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      audit:
+                        type: array
+                        items: { $ref: '#/components/schemas/AuditEntry' }
+  /settings:
+    get:
+      tags: [ConfiguraciÃ³n]
+      summary: Obtener configuraciÃ³n
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: ConfiguraciÃ³n
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      settings:
+                        type: object
+                        additionalProperties: true
+    patch:
+      tags: [ConfiguraciÃ³n]
+      summary: Actualizar configuraciÃ³n (solo super administrador)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: ConfiguraciÃ³n actualizada
+  /integrations/raffles:
+    get:
+      tags: [Integraciones]
+      summary: Listar rifas activas mediante API key con scope `raffles.read`
+      security: [{ apiKeyAuth: [] }]
+      responses:
+        '200':
+          description: Rifas activas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RaffleListResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  parameters:
+    RaffleId:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+    TicketId:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    Unauthorized:
+      description: No autenticado o token invÃ¡lido
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Forbidden:
+      description: Sin permisos para la operaciÃ³n
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Conflict:
+      description: Conflicto de estado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    ValidationError:
+      description: Datos invÃ¡lidos
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    TooManyRequests:
+      description: LÃ­mite de solicitudes excedido
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    RaffleResponse:
+      description: Rifa
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  raffle: { $ref: '#/components/schemas/Raffle' }
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details:
+              type: object
+              additionalProperties: true
+    HealthResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status: { type: string, enum: [ok, degraded] }
+            version: { type: string }
+            environment: { type: string }
+            database: { type: string, enum: [ok, error] }
+            timestamp: { type: string, format: date-time }
+    SessionResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            access_token: { type: string }
+            token_type: { type: string, enum: [Bearer] }
+            expires_in: { type: integer }
+            csrf_token: { type: string }
+            user: { $ref: '#/components/schemas/User' }
+            permissions:
+              type: array
+              items: { type: string }
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        full_name: { type: string }
+        role: { type: string, enum: [super_admin, leader, seller, buyer] }
+        status: { type: string, enum: [active, inactive, locked] }
+        phone: { type: [string, 'null'] }
+        document_type: { type: [string, 'null'] }
+        document_number: { type: [string, 'null'] }
+        must_change_password: { type: boolean }
+        last_login_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Preferences:
+      type: object
+      properties:
+        theme:
+          type: string
+          enum: [aurora, neon, sunset, ocean, forest, candy, cyber, royal, terracotta, mono, tropical, galaxy]
+        mode:
+          type: string
+          enum: [light, dark, contrast]
+        geometry:
+          type: string
+          enum: [soft, sharp, pill, organic]
+        background:
+          type: string
+          enum: [aurora, mesh, waves, orbs, grid, static]
+        sidebar_collapsed:
+          type: integer
+          minimum: 0
+          maximum: 1
+    RaffleStatus:
+      type: string
+      enum: [draft, pending_approval, approved, active, closed, finished, cancelled, rejected]
+    Raffle:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        description: { type: [string, 'null'] }
+        prize: { type: string }
+        ticket_price: { type: number }
+        total_tickets: { type: integer }
+        status: { $ref: '#/components/schemas/RaffleStatus' }
+        created_by: { type: string, format: uuid }
+        approved_by: { type: [string, 'null'], format: uuid }
+        approved_at: { type: [string, 'null'], format: date-time }
+        rejection_reason: { type: [string, 'null'] }
+        start_at: { type: string, format: date-time }
+        end_at: { type: string, format: date-time }
+        draw_seed_hash: { type: [string, 'null'] }
+        winner_ticket_id: { type: [string, 'null'], format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        stats:
+          type: object
+          properties:
+            total: { type: integer }
+            available: { type: integer }
+            reserved: { type: integer }
+            paid: { type: integer }
+            cancelled: { type: integer }
+            revenue: { type: number }
+    CreateRaffleRequest:
+      type: object
+      required: [name, prize, ticket_price, total_tickets, start_at, end_at]
+      properties:
+        name: { type: string, minLength: 3, maxLength: 150 }
+        description: { type: string, maxLength: 5000 }
+        prize: { type: string, maxLength: 255 }
+        ticket_price: { type: number, minimum: 0 }
+        total_tickets: { type: integer, minimum: 1, maximum: 1000000 }
+        start_at: { type: string, format: date-time }
+        end_at: { type: string, format: date-time }
+        code: { type: string, maxLength: 30 }
+    UpdateRaffleRequest:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+        prize: { type: string }
+        ticket_price: { type: number }
+        total_tickets: { type: integer }
+        start_at: { type: string, format: date-time }
+        end_at: { type: string, format: date-time }
+        code: { type: string }
+    TicketStatus:
+      type: string
+      enum: [available, reserved, paid, cancelled, winner]
+    Ticket:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        raffle_id: { type: string, format: uuid }
+        number: { type: integer }
+        seller_id: { type: [string, 'null'], format: uuid }
+        buyer_id: { type: [string, 'null'], format: uuid }
+        status: { $ref: '#/components/schemas/TicketStatus' }
+        price: { type: number }
+        qr_token: { type: string }
+        reserved_until: { type: [string, 'null'], format: date-time }
+        reserved_at: { type: [string, 'null'], format: date-time }
+        paid_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        buyer_name: { type: [string, 'null'] }
+        seller_name: { type: [string, 'null'] }
+        raffle_name: { type: [string, 'null'] }
+    Buyer:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        full_name: { type: string }
+        email: { type: [string, 'null'], format: email }
+        phone: { type: string }
+        document_type: { type: [string, 'null'] }
+        document_number: { type: [string, 'null'] }
+        user_id: { type: [string, 'null'], format: uuid }
+        created_by: { type: [string, 'null'], format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ApiKey:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        prefix: { type: string }
+        scopes:
+          type: array
+          items: { type: string }
+        created_by: { type: string, format: uuid }
+        last_used_at: { type: [string, 'null'], format: date-time }
+        expires_at: { type: [string, 'null'], format: date-time }
+        revoked_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+    AuditEntry:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        actor_id: { type: [string, 'null'], format: uuid }
+        actor_type: { type: string }
+        action: { type: string }
+        entity_type: { type: string }
+        entity_id: { type: [string, 'null'] }
+        before_json: { type: [string, 'null'] }
+        after_json: { type: [string, 'null'] }
+        ip: { type: [string, 'null'] }
+        user_agent: { type: [string, 'null'] }
+        created_at: { type: string, format: date-time }
+    RaffleListResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            raffles:
+              type: array
+              items: { $ref: '#/components/schemas/Raffle' }
+        meta:
+          type: object
+          additionalProperties: true
+    RaffleDetailResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            raffle: { $ref: '#/components/schemas/Raffle' }
+            sellers:
+              type: array
+              items: { type: object }
+            ticket_stats:
+              type: object
+              additionalProperties: { type: integer }
+            approvals:
+              type: array
+              items: { type: object }
+    TicketListResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            tickets:
+              type: array
+              items: { $ref: '#/components/schemas/Ticket' }
+        meta:
+          type: object
+          additionalProperties: true
+    BuyerListResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            buyers:
+              type: array
+              items: { $ref: '#/components/schemas/Buyer' }
+    UserListResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            users:
+              type: array
+              items: { $ref: '#/components/schemas/User' }
+    DashboardResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            dashboard:
+              type: object
+              properties:
+                role: { type: string }
+                metrics:
+                  type: object
+                  additionalProperties: true
+                recent_raffles:
+                  type: array
+                  items: { $ref: '#/components/schemas/Raffle' }
+                recent_tickets:
+                  type: array
+                  items: { $ref: '#/components/schemas/Ticket' }

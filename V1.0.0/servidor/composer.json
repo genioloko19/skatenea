@@ -1,0 +1,51 @@
+{
+    "name": "skatenea/api",
+    "description": "SKATENEA V1 — API REST para gestión de rifas",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.2",
+        "ext-pdo": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-openssl": "*",
+        "firebase/php-jwt": "^7.0",
+        "vlucas/phpdotenv": "^5.6",
+        "monolog/monolog": "^3.7"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0",
+        "phpstan/phpstan": "^2.0",
+        "squizlabs/php_codesniffer": "^3.10"
+    },
+    "autoload": {
+        "psr-4": {
+            "Skatenea\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Skatenea\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit --colors=always",
+        "test:coverage": "phpunit --coverage-html storage/coverage",
+        "lint": "phpcs --standard=phpcs.xml",
+        "lint:fix": "phpcbf --standard=phpcs.xml",
+        "stan": "phpstan analyse src --level=6 --no-progress",
+        "quality": [
+            "@lint",
+            "@stan",
+            "@test"
+        ],
+        "migrate": "php bin/migrate.php",
+        "seed": "php bin/seed.php"
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

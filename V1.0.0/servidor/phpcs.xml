@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<ruleset name="Skatenea">
+    <description>Estándar PSR-12 con límite de línea ampliado para este proyecto.</description>
+    <arg name="colors"/>
+    <arg name="extensions" value="php"/>
+    <config name="ignore_warnings_on_exit" value="1"/>
+    <file>src</file>
+    <file>public</file>
+    <file>bin</file>
+    <rule ref="PSR12"/>
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="150"/>
+            <property name="absoluteLineLimit" value="0"/>
+        </properties>
+    </rule>
+</ruleset>

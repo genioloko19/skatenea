@@ -1,0 +1,37 @@
+# Versión alfa auditada y sus informes (contienen secretos / PII de ejemplo)
+V0.0.1/
+INFORMES/
+
+# Backend
+V1.0.0/servidor/vendor/
+V1.0.0/servidor/.env
+V1.0.0/servidor/storage/logs/*
+!V1.0.0/servidor/storage/logs/.gitkeep
+V1.0.0/servidor/storage/rate/*
+!V1.0.0/servidor/storage/rate/.gitkeep
+V1.0.0/servidor/storage/coverage/
+V1.0.0/servidor/.phpunit.cache/
+V1.0.0/servidor/.phpunit.result.cache
+
+# Base de datos local
+V1.0.0/bd/*.sqlite
+V1.0.0/bd/*.db
+V1.0.0/bd/backups/
+
+# Frontend
+V1.0.0/cliente/node_modules/
+V1.0.0/cliente/dist/
+V1.0.0/cliente/.vite/
+V1.0.0/cliente/coverage/
+V1.0.0/cliente/playwright-report/
+V1.0.0/cliente/test-results/
+
+# Entorno / editor
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log

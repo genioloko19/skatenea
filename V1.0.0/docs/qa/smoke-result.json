@@ -1,0 +1,245 @@
+{
+  "generatedAt": "2026-11-06T05:21:09.512Z",
+  "base": "http://127.0.0.1:5173",
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "checks": [
+    {
+      "name": "Landing pública carga",
+      "ok": true,
+      "detail": "http://127.0.0.1:5173/"
+    },
+    {
+      "name": "Login carga",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Login y dashboard",
+      "ok": true,
+      "detail": "http://127.0.0.1:5173/app"
+    },
+    {
+      "name": "Menú de usuario visible",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Dropdown con panel de control",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Panel de control abre",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Página de rifas carga",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Detalle de rifa carga",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Página de boletas carga",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Página de usuarios carga",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Página de auditoría carga",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema aurora / light",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema aurora / dark",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema aurora / contrast",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema neon / light",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema neon / dark",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema neon / contrast",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema sunset / light",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema sunset / dark",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema sunset / contrast",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema ocean / light",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema ocean / dark",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema ocean / contrast",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema forest / light",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema forest / dark",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema forest / contrast",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema candy / light",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema candy / dark",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema candy / contrast",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema cyber / light",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema cyber / dark",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema cyber / contrast",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema royal / light",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema royal / dark",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema royal / contrast",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema terracotta / light",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema terracotta / dark",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema terracotta / contrast",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema mono / light",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema mono / dark",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema mono / contrast",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema tropical / light",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema tropical / dark",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema tropical / contrast",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema galaxy / light",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema galaxy / dark",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tema galaxy / contrast",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "screenshots": "C:\\xampp\\htdocs\\SKATENEA\\V1.0.0\\docs\\assets\\screenshots"
+}
